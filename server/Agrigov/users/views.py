@@ -11,6 +11,7 @@ from .serializers import (
     TransporterProfileSerializer,
     UserSerializer,
     LoginSerializer,
+    BuyerProfileSerializer
 )
 
 
@@ -71,6 +72,14 @@ class FarmerProfileView(generics.CreateAPIView):
 
 class TransporterProfileView(generics.CreateAPIView):
     serializer_class = TransporterProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_serializer_context(self):
+        return super().get_serializer_context()
+    
+class BuyerProfileView(generics.CreateAPIView):
+    serializer_class = BuyerProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
