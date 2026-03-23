@@ -101,3 +101,13 @@ class TransporterProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"TransporterProfile - {self.user.email}"
+
+class BuyerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="buyer_profile")
+    age = models.PositiveIntegerField()
+    
+    bussiness_license_image = CloudinaryField("business_license" , folder="AGRIGOV/buyers/businessLicenses" , transformation={"quality": "auto", "fetch_format": "auto"})
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return f"BuyerProfile - {self.user.email}"

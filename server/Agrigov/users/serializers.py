@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.db import transaction
-from .models import User, FarmerProfile, TransporterProfile
+from .models import User, FarmerProfile, TransporterProfile, BuyerProfile
 from farms.models import Farm
 from vehicules.models import Vehicle
 
@@ -26,10 +26,6 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop("password")
         user = User.objects.create_user(**validated_data, password=password)
-
-        if user.role == User.ROLE_BUYER:
-            user.is_verified = True
-            user.save(update_fields=["is_verified"])
 
         return user
 
@@ -124,3 +120,24 @@ class TransporterProfileSerializer(serializers.ModelSerializer):
         Vehicle.objects.create(transporter=user, **vehicle_data)
 
         return profile
+    
+class BuyerProfileSerializer(serializers.ModelSerializer):
+    bussiness_license_image = serializers.ImageField(write_only=True)
+
+    class Meta:
+        model = BuyerProfile
+        fields = [
+            "age",
+            "bussiness_license_image",
+        ]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+
+        if user.role != User.ROLE_BUYER:
+            raise serializers.ValidationError("Only buyers allowed")
+
+        if hasattr(user, "buyer_profile"):
+            raise serializers.ValidationError("Profile already exists")
+
+        return BuyerProfile.objects.create(user=user, **validated_data)    
