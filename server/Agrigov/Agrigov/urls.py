@@ -23,7 +23,7 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/products/" , include("products.urls")),
-    #path("api/" , include("orders.urls")),
+    path("api/orders/" , include("orders.urls")),
     #path("api/" , include("users.urls")),
     #path("api/" , include("dashboard.urls")),
     path("api/users/", include("users.urls")),
@@ -31,5 +31,5 @@ urlpatterns = [
     path("api/farms/", include("farms.urls")),
     path("api/vehicules/", include("vehicules.urls")),
     #path("api/", include("reviews.urls")),
-    #path("api/cart/", include("cart.urls")),
+    path("api/cart/", include("cart.urls")),
 ]
