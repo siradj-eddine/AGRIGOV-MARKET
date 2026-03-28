@@ -1,106 +1,164 @@
-export type StockStatus = "In Stock" | "Low Stock" | "Out of Stock";
-export type GradeLabel = "Grade A" | "Grade B" | "Organic";
-export type ViewMode = "grid" | "list";
+// ─── Listing Status ───────────────────────────────────────────────────────────
 
-export interface InventoryItem {
+export type ListingStatus = 'Active' | 'Out of Stock' | 'Draft';
+
+// ─── Filter Tab ───────────────────────────────────────────────────────────────
+
+export type ListingFilter = 'All Listings' | ListingStatus;
+
+// ─── Product Listing ─────────────────────────────────────────────────────────
+
+export interface ProductListing {
   id: string;
   name: string;
-  harvestedDate: string;
-  quantity: string;
-  priceLabel: string; // e.g. "Price/kg"
-  priceValue: string; // e.g. "$0.85"
-  status: StockStatus;
-  grade: GradeLabel;
-  category: "Vegetables" | "Fruits" | "Grains";
   imageUrl: string;
   imageAlt: string;
+  type: string;          // e.g. "Vegetable", "Grain", "Tuber"
+  variety: string;       // e.g. "Heirloom Roma"
+  quantity: number;
+  unit: string;          // e.g. "kg", "units"
+  listPrice: number;     // farmer's listed price
+  marketPrice: number;   // reference market price
+  status: ListingStatus;
 }
 
-export interface PendingOrder {
-  id: string;
-  buyerInitials: string;
-  buyerName: string;
-  itemDescription: string;
+// ─── Summary Stat ─────────────────────────────────────────────────────────────
+
+export interface SummaryStat {
+  label: string;
+  value: string;
+  icon: string;  // Material Symbol name
 }
+
+// ─── Nav Item ─────────────────────────────────────────────────────────────────
 
 export interface NavItem {
-  icon: string;
   label: string;
+  icon: string;
   href: string;
   active?: boolean;
-  badge?: number;
 }
 
 
+// ─── Sidebar Nav ──────────────────────────────────────────────────────────────
 
-export const inventoryItems: InventoryItem[] = [
+export const NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard',          icon: 'dashboard',    href: '/farmer' },
+  { label: 'Inventory',          icon: 'inventory_2',  href: '/inventory' },
+  { label: 'Product Management', icon: 'list_alt',     href: '/products/manage', active: true },
+  { label: 'Orders',             icon: 'receipt_long', href: '/orders' },
+  { label: 'Settings',           icon: 'settings',     href: '/settings' },
+];
+
+// ─── Filter Tabs ──────────────────────────────────────────────────────────────
+
+export const LISTING_FILTERS: ListingFilter[] = [
+  'All Listings',
+  'Active',
+  'Out of Stock',
+  'Draft',
+];
+
+// ─── Status Style Lookup ──────────────────────────────────────────────────────
+
+export const STATUS_STYLES: Record<
+  ListingStatus,
+  { badge: string; imageClass: string; textClass: string; qtyBadge: string }
+> = {
+  Active: {
+    badge:      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    imageClass: '',
+    textClass:  'text-slate-900 dark:text-slate-100',
+    qtyBadge:   'bg-primary/10 text-primary',
+  },
+  'Out of Stock': {
+    badge:      'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+    imageClass: 'grayscale opacity-60',
+    textClass:  'text-slate-400 dark:text-slate-500',
+    qtyBadge:   'bg-slate-100 dark:bg-slate-800 text-slate-400',
+  },
+  Draft: {
+    badge:      'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+    imageClass: 'opacity-80',
+    textClass:  'text-slate-900 dark:text-slate-100',
+    qtyBadge:   'bg-primary/10 text-primary',
+  },
+};
+
+// ─── Action Icon Lookup ───────────────────────────────────────────────────────
+// Draft rows show delete instead of visibility_off
+
+export const ACTION_ICON: Record<ListingStatus, { icon: string; title: string }> = {
+  Active:         { icon: 'visibility_off', title: 'Deactivate' },
+  'Out of Stock': { icon: 'visibility_off', title: 'Deactivate' },
+  Draft:          { icon: 'delete',         title: 'Delete Draft' },
+};
+
+// ─── Seed Listings ────────────────────────────────────────────────────────────
+
+export const INITIAL_LISTINGS: ProductListing[] = [
   {
-    id: "1",
-    name: "Russet Potatoes",
-    harvestedDate: "Oct 12, 2023",
-    quantity: "1,200 kg",
-    priceLabel: "Price/kg",
-    priceValue: "$0.85",
-    status: "In Stock",
-    grade: "Grade A",
-    category: "Vegetables",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDuEAtOkTtO5Rcig3aOQy4wPi4iE8J3t71wi3zsEKmdefhD1pR-cm6eSNCZp8ZxkdOnEveaCRBgAH0BpoujxtDEfOBNTtkdwh0Kwh-gtdvaM41KMXJReW9GFr-GIZ_H98DLzcK2r_JVJZ9bhD6Pcd-WRF0ULmHEvmcjhDRB42XS0iFetJ6UX98iP4IxHhC8Z8T3IE2kAS7D2K651a6YzI7Xu7FR-a_n-SEEtZEXwtdwT9iUt8iH4qQ9CvQf4k30I5hDgDYhDwUuCk3o",
-    imageAlt: "Pile of fresh russet potatoes with soil",
+    id:          'lst-001',
+    name:        'Roma Tomatoes',
+    imageUrl:    'https://lh3.googleusercontent.com/aida-public/AB6AXuB5Jq5-F5Xf1EI6kw_F2A0vXgMlu_s7K1r7ERugwRQ7yWf6zkLEX89KZ2wYNbWgldJPkD-Acocrb3XvLIu7w_XQIUQSvJca2tr9GhdjGpcpLbGCRIdw2Xmu8AIcpi_eEDLZ8QIzod-jtvNEp8dN_siK7Rfp4wf96oSOdPeLuQS37TlKGMXb4qBTPTLiQrqQaiSXlhRREQuRDFmJfPr114wmoqRuNyZI8B7ZWLMQcBtGltEI7-p9BBR-9sD8_lmdKsKMv6_S2Byh3BpQ',
+    imageAlt:    'Fresh Roma tomatoes',
+    type:        'Vegetable',
+    variety:     'Heirloom Roma',
+    quantity:    500,
+    unit:        'kg',
+    listPrice:   2.20,
+    marketPrice: 2.00,
+    status:      'Active',
   },
   {
-    id: "2",
-    name: "Iceberg Lettuce",
-    harvestedDate: "Oct 14, 2023",
-    quantity: "150 heads",
-    priceLabel: "Price/unit",
-    priceValue: "$1.20",
-    status: "Low Stock",
-    grade: "Organic",
-    category: "Vegetables",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCsyrfRCHWXQpswYqu7Fwzx44L2XEuZXRaptkUYPB00akyiZxuhG_tz73y0KPoBaF6MS4hrHYj86iYxlog_eK2HZmhpkZsFvt8SSAl3gwmMDlSagyOwHkdYOpM5HcTTudAf0OGEbVbxuYdd_pJRg2NUolfHnEfI2WH1Z3kGnKMXEp8FpDOde6brPYPOsU9lUaWKCy0-q84zFPVjjkeG1YiMKRrViyBmvWn7mqniHswHqvSUWKTORfRRBBHZwOI67PW2bZIJguSXo3KZ",
-    imageAlt: "Fresh organic green lettuce heads",
+    id:          'lst-002',
+    name:        'Honey Bantam Corn',
+    imageUrl:    'https://lh3.googleusercontent.com/aida-public/AB6AXuA2ckxw6XI9HFj1Rd5gDZdnSGLTUNrOuUUtNI1NI_pkFvSASbk_0OqaOr6yYncWN0FLZbeGGcVMzeWugDjAb_FbtbF6_MCN95n426JXs-4j_bc7BTKqg5yff6bos5h2T1jSs227RW-g7JgmrlmdWPSB-D1iG-zExwxPQrIUtty_zG4nCEr3PYfwvyq25QSx5CcSoINeTtQIfKFZouvbXJfa0XSRjVbTwrqMxkofPRgz3nJmpYiDJeUUCfnneXdfJoHc2v47dONNXKhX',
+    imageAlt:    'Sweet corn cobs',
+    type:        'Grain',
+    variety:     'Extra Sweet',
+    quantity:    1200,
+    unit:        'units',
+    listPrice:   0.45,
+    marketPrice: 0.50,
+    status:      'Active',
   },
   {
-    id: "3",
-    name: "Sweet Corn",
-    harvestedDate: "Oct 10, 2023",
-    quantity: "5.5 Tons",
-    priceLabel: "Price/ton",
-    priceValue: "$190",
-    status: "In Stock",
-    grade: "Grade B",
-    category: "Grains",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCpo2YEGZWEjmFV4CXB_91CU_7WN9RZcGDuhHoIAVXZQjFgqvVLlw1OzgwZBzTpnWwVAPeOMi0QMEjUrfFciquznZDZINCZdWI6_T8e-vS_Md63svDn-ZgahYpCXtKXNwraIKZr8qqRmPsja2Ehx90yiANT9u4dxctvYPZRiWBUBYl3rSsTqpOvbD-bCWTOC5ZhggAQmLULEMxprzITE_wr51b6IkCinVmSR7NFMjXC9NKq6RPvIrtTLJtIK6-bY_8xaGzeABAqOzu_",
-    imageAlt: "Yellow ripe corn cobs stacked",
+    id:          'lst-003',
+    name:        'California Peppers',
+    imageUrl:    'https://lh3.googleusercontent.com/aida-public/AB6AXuDXbSHvpWkuj0rBe50fzJg3H_vHvaObQO2AEh4bnggt8gBxLQ2GbK3m9QQn9Hl9TH2mffDlJYIKS6wq2SIeeeFn0LtvPZDK3bOWe6pP39QhyGcgcmFJa8QosThwBGAGybjwRvo_8ImTOtHSrojFIslAfJwWKFtsnMAJrsWu9GXhP-FFS8aavgy3hOQyoOoHfWCMCb2p9Maou0lXMSICkfovaJhUYF_dBiQdj9wZ5Ute0N3WSH7tHCSz6VknNAoXVEbyhNY1GvZPtF9k',
+    imageAlt:    'Bell peppers California Wonder',
+    type:        'Vegetable',
+    variety:     'Bell Pepper',
+    quantity:    0,
+    unit:        'kg',
+    listPrice:   3.50,
+    marketPrice: 3.50,
+    status:      'Out of Stock',
   },
   {
-    id: "4",
-    name: "Roma Tomatoes",
-    harvestedDate: "Oct 15, 2023",
-    quantity: "450 kg",
-    priceLabel: "Price/kg",
-    priceValue: "$1.50",
-    status: "In Stock",
-    grade: "Grade A",
-    category: "Vegetables",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAogUobzpqZzaZdacGanCl5shP78YIV_6-yt4x6rseOwx7gL0CXpqFeTt9xUxtedk4RpQLrMO5_ylbZfnRhfVT0a8wWXIgYrXLAFVa_IjZD2zPSZGrlGt3R8JMZlOcuiJVdr8eKaxVxjPvtFCdgtLamOHY0q9a2POMwUNv-rFF_XqW102p3X3SrStt3ZxKYZbHs8hfFrLD5h2BcjzKqmWFqR5K1Lsu5sItJUfQsCObgbtY48GhX5ZrBXAwqZhcx46PGIPyOCiMfV3ZZ",
-    imageAlt: "Close up of red ripe tomatoes",
+    id:          'lst-004',
+    name:        'Yukon Potatoes',
+    imageUrl:    'https://lh3.googleusercontent.com/aida-public/AB6AXuC3XsaarNpewr7zqb0lRNZyaVsiQQ8_U0qE0DiGURCvbb-sXGLbIwJAP3gA-adWxqclWgzuxSgKc15DN_8G26mp1vsFKsoC-d_J0HBJwGMbxlxdiVlEzDaN4b1t-nZ5sjiCTh4rNEU06op0_TbxbizR62M7Ajo-9qHDEeYcaQrbRQ7K8gwcJU8mhdm7JRqWx2Ez4UPjk9KcGfeaenjQrFVCeVi4xitTHmj41j7inVfsr1oUyeQf1T-ClkeiQ28wLeR8I2NAIEeXTs4Q',
+    imageAlt:    'Yukon Gold Potatoes',
+    type:        'Tuber',
+    variety:     'Gold Premium',
+    quantity:    2000,
+    unit:        'kg',
+    listPrice:   1.15,
+    marketPrice: 1.10,
+    status:      'Draft',
   },
 ];
 
-export const pendingOrders: PendingOrder[] = [
-  { id: "1", buyerInitials: "FM", buyerName: "FreshMarkets", itemDescription: "200kg Tomatoes" },
-  { id: "2", buyerInitials: "LG", buyerName: "Local Grocer", itemDescription: "50kg Onions" },
+// ─── Summary Stats (derived at runtime in the page shell) ─────────────────────
+// Static stat cards for icon/label definitions — values computed from listings
+
+export const SUMMARY_STAT_DEFS: Omit<SummaryStat, 'value'>[] = [
+  { label: 'Active Listings',   icon: 'local_mall'  },
+  { label: 'Total Value',       icon: 'trending_up' },
+  { label: 'Total Impressions', icon: 'visibility'  },
 ];
 
-export const navItems: NavItem[] = [
-  { icon: "dashboard", label: "Dashboard", href: "#" },
-  { icon: "inventory_2", label: "My Harvests", href: "#", active: true },
-  { icon: "shopping_bag", label: "Orders", href: "#", badge: 3 },
-  { icon: "local_shipping", label: "Logistics", href: "#" },
-  { icon: "analytics", label: "Market Prices", href: "#" },
-];
+// Static impressions value (would come from API in production)
+export const TOTAL_IMPRESSIONS = '1,248';
