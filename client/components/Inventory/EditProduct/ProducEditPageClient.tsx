@@ -18,6 +18,7 @@ import {
   FARMER_AVATAR_URL,
 } from '@/types/ProductEdit';
 import type { ProductForm } from '@/types/ProductEdit';
+import Navbar from '@/components/navbar';
 
 export default function ProductEditPage() {
   // ── State ──────────────────────────────────────────────────────────────────
@@ -53,63 +54,12 @@ export default function ProductEditPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-      {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-6 h-16 shadow-sm border-b border-primary/10">
-        <span className="text-xl font-extrabold text-primary italic">Harvest Intel</span>
-
-        <div className="flex items-center gap-6">
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8 font-bold text-lg tracking-tight">
-            {TOP_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={item.active ? 'page' : undefined}
-                className={
-                  item.active
-                    ? 'text-primary font-semibold px-3 py-1 rounded-xl'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors px-3 py-1 rounded-xl'
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Icon buttons + avatar */}
-          <div className="flex items-center gap-3">
-            <button
-              aria-label="View notifications"
-              className="p-2 text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all active:scale-95"
-            >
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <button
-              aria-label="Open settings"
-              className="p-2 text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all active:scale-95"
-            >
-              <span className="material-symbols-outlined">settings</span>
-            </button>
-            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary/30 relative">
-              <Image
-                src={FARMER_AVATAR_URL}
-                alt="Farmer profile avatar"
-                fill
-                sizes="32px"
-                className="object-cover"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">      
       {/* Sidebar */}
       <ProductEditSidebar />
 
       {/* Main Content */}
-      <main className="md:ml-64 pt-24 pb-12 px-4 md:px-12">
+      <main className="md:ml-64 pt-12 pb-12 px-4 md:px-12">
         <div className="max-w-4xl mx-auto">
 
           {/* Page Header */}

@@ -51,65 +51,10 @@ export default function FarmerProfilePage() {
     setSecurity(SECURITY_SETTINGS);
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-      {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-6 h-16 shadow-sm border-b border-primary/10">
-        <span className="text-xl font-extrabold text-primary italic">Harvest Intel</span>
-
-        <div className="flex items-center gap-6">
-          {/* Desktop nav */}
-          <nav className="hidden md:flex gap-4 text-slate-500 dark:text-slate-400 font-bold text-base" aria-label="Top navigation">
-            {TOP_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={item.active ? 'page' : undefined}
-                className={`px-3 py-1 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                  item.active
-                    ? 'text-primary border-b-2 border-primary font-semibold'
-                    : ''
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Icon buttons + avatar */}
-          <div className="flex items-center gap-3">
-            <button
-              aria-label="View notifications"
-              className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            >
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <button
-              aria-label="Open settings"
-              className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-            >
-              <span className="material-symbols-outlined">settings</span>
-            </button>
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary relative">
-              <Image
-                src={TOPBAR_AVATAR_URL}
-                alt="User profile avatar"
-                fill
-                sizes="40px"
-                className="object-cover"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Sidebar */}
-      <FarmerProfileSidebar />
-
+    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">     
       {/* Main Content */}
-      <main className="md:ml-64 pt-20 px-6 pb-24 md:pb-12">
+      <main className="md:ml-20 pt-20 px-6 pb-24 md:pb-12">
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">

@@ -25,7 +25,6 @@ export default function WeatherPage() {
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-gray-900 dark:text-white font-display min-h-screen flex flex-col">
-      <WeatherNavbar activeZoneId={activeZoneId} onZoneChange={setActiveZoneId} />
 
       <main className="grow p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
         {/* Header + date */}

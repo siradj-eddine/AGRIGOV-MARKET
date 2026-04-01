@@ -17,17 +17,17 @@ class ProductListView(generics.ListAPIView):
         .prefetch_related("images")
     )
     serializer_class = ProductSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ProductFilter
-    search_fields = ["title", "description"]
-    ordering_fields = ["unit_price", "created_at"]
+    search_fields = ["title", "description", "category__name"]
+    ordering_fields = ["unit_price", "created_at", "average_rating", "stock"]
 
 
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all().prefetch_related("images")
     serializer_class = ProductSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class MyProductsView(generics.ListAPIView):

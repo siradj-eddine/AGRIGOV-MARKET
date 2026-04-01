@@ -20,8 +20,6 @@ export default function RegionalDataPage() {
 
   return (
     <div className="bg-background-light text-slate-800 font-display antialiased h-screen flex flex-col overflow-hidden selection:bg-primary selection:text-black">
-      <RegionalHeader />
-
       <main className="flex-1 flex overflow-hidden">
         <YieldSidebar />
 

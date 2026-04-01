@@ -1,63 +1,74 @@
-export interface CartItem {
-  id: string;
-  name: string;
-  description: string;
-  supplierName: string;
-  supplierIcon: "verified" | "storefront";
-  location: string;
-  imageUrl: string;
-  imageAlt: string;
-  quantity: number;
-  unitLabel: string;
-  pricePerUnit: number;
-  priceLabel: string;
+// ─── Raw API shapes ───────────────────────────────────────────────────────────
+
+/** Farm shape as returned inside cart items (different serializer from product list) */
+export interface CartFarm {
+  id:         number;
+  name:       string;   // NOTE: cart uses "name", product list uses "farm_name"
+  wilaya:     string;
+  baladiya:   string;
+  farm_size:  number;
+  address:    string;   // NOTE: cart uses lowercase "address", product uses "Address"
+  created_at: string;
+  farmer:     number;   // FK id only
 }
 
+/** Product shape as embedded inside a cart item */
+export interface CartProduct {
+  id:             number;
+  title:          string;
+  farm:           CartFarm;
+  farmer_name:    string;
+  description:    string;
+  season:         string;
+  unit_price:     string;   // decimal string
+  stock:          number;
+  in_stock:       boolean;
+  category:       string;   // plain string slug in cart (e.g. "fruits")
+  images:         { id: number; image: string }[];
+  average_rating: number;
+  review_count:   number;
+  created_at:     string;
+}
 
-export const initialCartItems: CartItem[] = [
-  {
-    id: "1",
-    name: "Red Onions (Grade A)",
-    description: "Harvest: Oct 2023 | Dry Cured",
-    supplierName: "Green Valley Cooperative",
-    supplierIcon: "verified",
-    location: "Kaduna North",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDRX1VdVsHDaRcZkEZac-eIkOIay9Hr7u8lkWzsY1ozNnDYtcp7rbNQNZxpXbB-uGS8e2i9cr_uWRDRKcaCzoLI33uC5U3yphbuc-os3oeDBifcxFo5Hvr6U9UWEdVtPWnJs9N8A1xWYae-kkjE6BJW_byurrq2UBCUkfiWUT0w76i4H41VTf3oH-Upht5iixYDm4-E9aEzZMQcm5FYzdsdnw7plfPfhQBWE2MrqUlx7Q8h5AvXJmwPudFYkphr2ehBtLLotJ2rrUxn",
-    imageAlt: "Sacks of red onions",
-    quantity: 500,
-    unitLabel: "kg",
-    pricePerUnit: 450,
-    priceLabel: "₦450 / kg",
-  },
-  {
-    id: "2",
-    name: "Tomatoes (Roma Variety)",
-    description: "Partially Ripe | Long Shelf Life",
-    supplierName: "Adewale Farms Ltd.",
-    supplierIcon: "storefront",
-    location: "Ogun State",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAraINWmh9-C--w-kQq0vqOsAddguYplP1TMvNN8JlrlDBQxotpFOm1LyKgwimlieaxO1k3-Ze5SolQ9YEsztrm3Qwj0u9xk18XPzNP_YLhxFD256vusl9k774_cGPXlMbCLPiB5tLmfN43XlpTemL6whP6hPGz4YZIIbGcemsDw1tBJKgDn1vG5YlruRWf-Fdw-wOt9ZsQKupu46lRkShifuKN_djZCQWoRxw3pSKje1o4DSUXOHtZ28ADllxUONQQjUicn1RcaCCB",
-    imageAlt: "Fresh Roma tomatoes",
-    quantity: 20,
-    unitLabel: "Crates (25kg)",
-    pricePerUnit: 8000,
-    priceLabel: "₦8,000 / crate",
-  },
-  {
-    id: "3",
-    name: "Carrots (Large)",
-    description: "Washed | Bagged",
-    supplierName: "Jos Plateau Greens",
-    supplierIcon: "verified",
-    location: "Jos, Plateau",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBFdQaK3GY2I6P0ImAQr_Z2NRmljUTwu9g_nTZWOmeV4MSTtiFRdJhaKCARpb49iswziN3wYzWyT7SbXQ57kKSiRMRjCdZjO67ZwmggMOW1o2cfRzSRYICrTULJdqC14-MxHylZyrdknhcyjJvK5D2qKhe6S1mXHRTPDWPaoz4ToLqQiQPKQOdrh2WGkjshUE_gTXJFO3m-b2hAkdbw2wiD1ycbzzlxGKMhkG4eaunrVmj1Z5NSRzL47EaGkwtSkTiDfRjmCTXOPRog",
-    imageAlt: "Fresh orange carrots",
-    quantity: 15,
-    unitLabel: "Sacks (50kg)",
-    pricePerUnit: 4500,
-    priceLabel: "₦4,500 / sack",
-  },
-];
+/** One line in the cart */
+export interface CartItem {
+  id:          number;
+  product:     CartProduct;
+  quantity:    number;
+  price:       string;      // unit price at time of adding
+  total_price: number;
+}
+
+/** Full cart response from GET /api/cart/ */
+export interface CartResponse {
+  id:          number;
+  buyer:       number;
+  items:       CartItem[];
+  total_items: number;
+  total_price: number;
+  farms:       string[];    // array of farm id strings
+}
+
+// ─── API request bodies ───────────────────────────────────────────────────────
+
+export interface AddItemRequest {
+  product_id: number;
+  quantity:   number;
+}
+
+export interface UpdateQuantityRequest {
+  product_id:  number;
+  quantity: number;
+}
+
+export interface RemoveItemRequest {
+  item_id: number;
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Platform levy rate applied on subtotal */
+export const LEVY_RATE = 0.01;
+
+/** Flat shipping cost in DZD — replace with real logistics calc when available */
+export const SHIPPING_FLAT = 2_500;

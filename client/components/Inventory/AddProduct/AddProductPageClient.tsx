@@ -63,8 +63,6 @@ export default function AddProductPage() {
       )}
 
       <main className="flex-1 flex flex-col min-w-0">
-        <AddProductHeader onMenuToggle={() => setMobileMenuOpen((v) => !v)} />
-
         <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-4xl mx-auto w-full">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500 mb-6">

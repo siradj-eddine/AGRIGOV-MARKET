@@ -4,7 +4,7 @@ from categories.models import Category
 from django.db import transaction
 from official_prices.services import validate_price, get_active_price
 from farms.models import Farm
-
+from farms.serializers import FarmSerializer
 
 class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -20,6 +20,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     farmer_name = serializers.CharField(source="farm.farmer.username", read_only=True)
+    farm = FarmSerializer(read_only=True)
     category = serializers.SlugRelatedField(
         slug_field="slug",
         queryset=Category.objects.filter(is_active=True)
@@ -30,6 +31,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "farm",
             "farmer_name",
             "description",
             "season",

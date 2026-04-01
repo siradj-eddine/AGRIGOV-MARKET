@@ -83,65 +83,11 @@ export default function CategoryEditPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-      {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-6 h-16 shadow-sm border-b border-primary/10">
-        <div className="flex items-center gap-4">
-          <span className="material-symbols-outlined text-primary text-2xl">agriculture</span>
-          <span className="text-xl font-extrabold text-primary italic">Harvest Intel</span>
-        </div>
-
-        <div className="flex items-center gap-6">
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-6" aria-label="Top navigation">
-            {TOP_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={item.active ? 'page' : undefined}
-                className={
-                  item.active
-                    ? 'text-primary font-semibold text-lg tracking-tight'
-                    : 'text-slate-500 dark:text-slate-400 text-lg tracking-tight hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors px-2 py-1 rounded-lg'
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Icon buttons + avatar */}
-          <div className="flex items-center gap-3">
-            <button
-              aria-label="View notifications"
-              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
-            </button>
-            <button
-              aria-label="Open settings"
-              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-slate-600 dark:text-slate-400">settings</span>
-            </button>
-            <div className="w-10 h-10 rounded-full bg-primary/10 overflow-hidden border-2 border-white shadow-sm relative">
-              <Image
-                src={ADMIN_AVATAR_URL}
-                alt="Admin user profile avatar"
-                fill
-                sizes="40px"
-                className="object-cover"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Sidebar */}
       <CategoryEditSidebar />
 
       {/* Main Content */}
-      <main className="lg:pl-64 pt-16 min-h-screen">
+      <main className="lg:pl-64 min-h-screen">
         <div className="max-w-6xl mx-auto p-6 lg:p-10">
 
           {/* Breadcrumbs + page header */}

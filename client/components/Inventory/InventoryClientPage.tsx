@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import ProductManagementNavbar from './ProductsNavbar';
 import ProductManagementSidebar from './ProductsSidebar';
 import ProductsTable from './ProductsTable';
 import SummaryStats from './SummaryStats';
@@ -101,7 +100,6 @@ export default function ProductManagementPage() {
     <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
       <div className="flex h-full flex-col">
         {/* Top Nav — receives controlled search state */}
-        <ProductManagementNavbar search={search} onSearchChange={setSearch} />
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}

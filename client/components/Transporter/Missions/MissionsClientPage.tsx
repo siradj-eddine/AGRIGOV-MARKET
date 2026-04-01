@@ -77,36 +77,6 @@ export default function MissionManagementPage() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-16 flex items-center justify-between px-8 bg-white dark:bg-background-dark border-b border-primary/10 shrink-0">
-          <h2 className="text-xl font-bold tracking-tight">Mission Management</h2>
-
-          <div className="flex items-center gap-6">
-            {/* Search */}
-            <div className="relative w-64">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">
-                search
-              </span>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search orders..."
-                aria-label="Search missions"
-                className="w-full bg-primary/5 border-none focus:ring-2 focus:ring-primary rounded-lg pl-10 pr-4 py-2 text-sm outline-none"
-              />
-            </div>
-
-            {/* Notifications */}
-            <button
-              aria-label="View notifications"
-              className="size-10 flex items-center justify-center rounded-lg bg-primary/10 text-slate-700 dark:text-slate-300 hover:bg-primary/20 transition-colors"
-            >
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-          </div>
-        </header>
-
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto p-8 space-y-6">
           {/* Tab bar */}

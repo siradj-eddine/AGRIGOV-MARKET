@@ -11,7 +11,7 @@ export default function AdminSidebar({ items }: Props) {
   const renderedSections = new Set<string>();
 
   return (
-    <aside className="w-64 bg-secondary-dark dark:bg-black text-white flex flex-col shadow-xl z-20 shrink-0 md:flex">
+    <aside className="w-64 min-h-screen bg-secondary-dark dark:bg-black text-white flex flex-col shadow-xl z-50 shrink-0 md:flex">
       {/* Logo */}
       <div className="p-6 flex items-center space-x-3 border-b border-slate-700">
         <div className="bg-primary/20 p-2 rounded-lg">

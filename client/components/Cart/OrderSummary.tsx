@@ -1,113 +1,159 @@
 "use client";
 
 import { useState } from "react";
+import { LEVY_RATE, SHIPPING_FLAT } from "@/types/Cart";
+import Link from "next/link";
 
 interface Props {
-  subtotal: number;
-  transport: number;
-  levyRate: number;
-  totalWeightKg: number;
-  vehicleType: string;
+  totalPrice:    number;  // raw sum from API
+  totalItems:    number;
+  farmCount:     number;
+  onClearCart:   () => Promise<void>;
+  isLoading:     boolean;
 }
 
-export default function OrderSummary({
-  subtotal,
-  transport,
-  levyRate,
-  totalWeightKg,
-  vehicleType,
-}: Props) {
-  const [promoCode, setPromoCode] = useState("");
-  const levy = subtotal * levyRate;
-  const total = subtotal + transport + levy;
+const fmt = (n: number) =>
+  n.toLocaleString("fr-DZ", { minimumFractionDigits: 2 }) + " DZD";
 
-  const fmt = (n: number) =>
-    "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2 });
+export default function OrderSummary({
+  totalPrice, totalItems, farmCount, onClearCart, isLoading,
+}: Props) {
+  const [promoCode,    setPromoCode]    = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [isClearing,   setIsClearing]   = useState(false);
+
+  const levy     = totalPrice * LEVY_RATE;
+  const shipping = totalItems > 0 ? SHIPPING_FLAT : 0;
+  const total    = totalPrice + levy + shipping;
+
+  const handleApplyPromo = () => {
+    // Placeholder — wire to real promo endpoint when available
+    if (promoCode.trim()) setPromoApplied(true);
+  };
+
+  const handleClear = async () => {
+    setIsClearing(true);
+    await onClearCart();
+    setIsClearing(false);
+  };
 
   return (
-    <div className="sticky top-24 space-y-6">
-      {/* Main summary card */}
-      <div className="bg-surface-light dark:bg-surface-dark shadow-lg rounded-xl border border-gray-100 dark:border-green-900/20 p-6">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Order Summary</h2>
+    <div className="sticky top-24 space-y-4">
 
-        {/* Logistics widget */}
-        <div className="bg-primary/10 dark:bg-primary/5 rounded-lg p-4 mb-6 border border-primary/20">
+      {/* ── Summary card ────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-100 p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-bold text-gray-900">Order Summary</h2>
+          {totalItems > 0 && (
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={isClearing || isLoading}
+              className="text-xs text-red-400 hover:text-red-600 font-medium flex items-center gap-1 disabled:opacity-40"
+            >
+              {isClearing ? (
+                <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+              ) : (
+                <span className="material-symbols-outlined text-sm">delete_sweep</span>
+              )}
+              Clear cart
+            </button>
+          )}
+        </div>
+
+        {/* Logistics info */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-5">
           <div className="flex items-start gap-3">
-            <div className="bg-white dark:bg-surface-dark p-2 rounded-full shadow-sm text-primary-dark dark:text-primary shrink-0">
-              <span className="material-icons">local_shipping</span>
-            </div>
-            <div className="w-full">
-              <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                Logistics Estimation
-              </h4>
-              <div className="mt-2 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Total Weight:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {totalWeightKg.toLocaleString()} kg
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Vehicle Type:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{vehicleType}</span>
-                </div>
+            <span
+              className="material-symbols-outlined text-primary-dark text-xl shrink-0 mt-0.5"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              local_shipping
+            </span>
+            <div className="w-full space-y-1.5">
+              <h4 className="text-sm font-semibold text-gray-900">Logistics Summary</h4>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Total items</span>
+                <span className="font-medium text-gray-900">{totalItems}</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Farms involved</span>
+                <span className="font-medium text-gray-900">{farmCount}</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Shipping (flat rate)</span>
+                <span className="font-medium text-gray-900">{fmt(shipping)}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Financial breakdown */}
-        <dl className="space-y-4 text-sm text-gray-600 dark:text-gray-300">
-          <div className="flex justify-between">
-            <dt>Subtotal (Items)</dt>
-            <dd className="font-medium text-gray-900 dark:text-white">{fmt(subtotal)}</dd>
+        <dl className="space-y-3 text-sm">
+          <div className="flex justify-between text-gray-500">
+            <dt>Products subtotal</dt>
+            <dd className="font-medium text-gray-900">{fmt(totalPrice)}</dd>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between text-gray-500">
+            <dt>Shipping</dt>
+            <dd className="font-medium text-gray-900">{fmt(shipping)}</dd>
+          </div>
+          <div className="flex justify-between text-gray-500">
             <dt className="flex items-center gap-1">
-              Estimated Transport
+              Platform levy ({(LEVY_RATE * 100).toFixed(0)}%)
               <span
-                className="material-icons text-gray-400 text-xs cursor-help"
-                title="Based on average distance to your registered warehouse"
+                className="material-symbols-outlined text-gray-300 text-xs cursor-help"
+                title="Covers Ministry platform and escrow services"
               >
                 info
               </span>
             </dt>
-            <dd className="font-medium text-gray-900 dark:text-white">{fmt(transport)}</dd>
+            <dd className="font-medium text-gray-900">{fmt(levy)}</dd>
           </div>
-          <div className="flex justify-between">
-            <dt>Platform Levy ({(levyRate * 100).toFixed(0)}%)</dt>
-            <dd className="font-medium text-gray-900 dark:text-white">{fmt(levy)}</dd>
-          </div>
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-between">
-            <dt className="text-base font-bold text-gray-900 dark:text-white">Total</dt>
-            <dd className="text-2xl font-bold text-primary-dark dark:text-primary">{fmt(total)}</dd>
+
+          {promoApplied && (
+            <div className="flex justify-between text-green-600">
+              <dt className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  local_offer
+                </span>
+                Promo ({promoCode})
+              </dt>
+              <dd className="font-medium">— 0 DZD</dd>
+            </div>
+          )}
+
+          <div className="border-t border-neutral-100 pt-3 flex justify-between">
+            <dt className="text-base font-bold text-gray-900">Total</dt>
+            <dd className="text-xl font-bold text-primary-dark">{fmt(total)}</dd>
           </div>
         </dl>
 
         {/* CTA */}
-        <div className="mt-8">
-          <button
-            type="button"
-            className="w-full bg-primary hover:bg-green-400 text-black font-bold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group"
+        <Link
+          href="/Checkout"
+          className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-lg bg-primary hover:bg-primary-dark text-black font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
+        >
+          Proceed to Checkout
+          <span className="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">
+            arrow_forward
+          </span>
+        </Link>
+
+        <p className="mt-3 text-xs text-center text-gray-400 flex items-center justify-center gap-1">
+          <span
+            className="material-symbols-outlined text-sm text-green-500"
+            style={{ fontVariationSettings: "'FILL' 1" }}
           >
-            Proceed to Checkout
-            <span className="material-icons text-black group-hover:translate-x-1 transition-transform">
-              arrow_forward
-            </span>
-          </button>
-          <p className="mt-4 text-xs text-center text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">
-            <span className="material-icons text-sm text-green-600">lock</span>
-            Transactions are secured by Ministry Escrow
-          </p>
-        </div>
+            lock
+          </span>
+          Secured by Ministry Escrow
+        </p>
       </div>
 
-      {/* Promo code card */}
-      <div className="bg-surface-light dark:bg-surface-dark shadow-sm rounded-xl border border-gray-100 dark:border-green-900/20 p-6">
-        <label
-          htmlFor="promo"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
+      {/* ── Promo code ──────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-100 p-5">
+        <label htmlFor="promo" className="block text-sm font-medium text-gray-700 mb-2">
           Have a voucher code?
         </label>
         <div className="flex gap-2">
@@ -115,17 +161,27 @@ export default function OrderSummary({
             id="promo"
             type="text"
             value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value)}
+            onChange={(e) => { setPromoCode(e.target.value); setPromoApplied(false); }}
             placeholder="Enter code"
-            className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-black/20 dark:text-white shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2.5"
+            className="block w-full rounded-lg border border-gray-200 text-sm placeholder-gray-400 focus:border-primary focus:ring-primary focus:outline-none py-2.5 px-3 transition"
           />
           <button
             type="button"
-            className="bg-gray-800 dark:bg-gray-700 text-white px-4 rounded-lg text-sm font-medium hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
+            onClick={handleApplyPromo}
+            disabled={!promoCode.trim()}
+            className="bg-gray-900 hover:bg-gray-700 text-white px-4 rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-40"
           >
             Apply
           </button>
         </div>
+        {promoApplied && (
+          <p className="mt-2 text-xs text-green-600 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+              check_circle
+            </span>
+            Promo code applied!
+          </p>
+        )}
       </div>
     </div>
   );

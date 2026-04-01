@@ -1,163 +1,215 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { ProductDetail } from "@/types/ProductDetails";
+import Link from "next/link";
+import type { ApiProduct } from "@/types/Product";
+import { SEASON_LABELS, SEASON_ICONS } from "@/types/Product";
+import { cartApi } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { SHIPPING_FLAT } from "@/types/Cart";
 
 interface Props {
-  product: ProductDetail;
-  onAddToCart: (qty: number) => void;
-  onBuyNow: (qty: number) => void;
+  product: ApiProduct;
 }
 
-export default function PurchaseCard({ product, onAddToCart, onBuyNow }: Props) {
-  const [quantity, setQuantity] = useState(product.defaultQuantity);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [deliveryCity, setDeliveryCity] = useState(product.defaultDeliveryCity);
+const MIN_ORDER = 1;
 
-  const availabilityPct = Math.min(
-    100,
-    Math.round((product.availableTons / product.totalTons) * 100)
-  );
+export default function PurchaseCard({ product }: Props) {
+  const [quantity,    setQuantity]    = useState(MIN_ORDER);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isAdding,    setIsAdding]    = useState(false);
+  const [feedback,    setFeedback]    = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const price   = parseFloat(product.unit_price);
+  const inStock = product.in_stock && product.stock > 0;
+  const maxQty  = product.stock;
 
   const subtotal = useMemo(
-    () => quantity * product.pricePerTon + product.estimatedShipping,
-    [quantity, product.pricePerTon, product.estimatedShipping]
+    () => quantity * price + SHIPPING_FLAT,
+    [quantity, price],
   );
 
+  const showFeedback = (type: "success" | "error", msg: string) => {
+    setFeedback({ type, msg });
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
+  const handleAddToCart = async () => {
+    setIsAdding(true);
+    try {
+      await cartApi.addItem({ product_id: product.id, quantity });
+      showFeedback("success", `${quantity} unit${quantity > 1 ? "s" : ""} added to your cart.`);
+    } catch (err) {
+      showFeedback(
+        "error",
+        err instanceof ApiError
+          ? err.status === 401 ? "Please sign in to add items to your cart." : err.message
+          : "Failed to add item. Please try again.",
+      );
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
-    <div className="bg-neutral-surface dark:bg-neutral-surface-dark rounded-xl shadow-lg border border-neutral-border dark:border-neutral-border-dark p-6 sticky top-24">
-      {/* Title + favorite */}
-      <div className="flex justify-between items-start mb-2">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
-          {product.name}
-        </h1>
+    <div className="bg-white rounded-xl shadow-lg border border-neutral-100 p-6 xl:sticky top-24">
+
+      {/* Title + favourite */}
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 leading-tight">{product.title}</h1>
+          <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">{SEASON_ICONS[product.season]}</span>
+            {SEASON_LABELS[product.season]} · {product.category.name}
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setIsFavorited((v) => !v)}
           aria-label={isFavorited ? "Remove from favourites" : "Add to favourites"}
-          className={`transition-colors ${isFavorited ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
         >
-          <span className="material-icons">
-            {isFavorited ? "favorite" : "favorite_border"}
+          <span
+            className={`material-symbols-outlined text-xl transition-colors ${isFavorited ? "text-red-500" : "text-gray-200 hover:text-red-400"}`}
+            style={isFavorited ? { fontVariationSettings: "'FILL' 1" } : undefined}
+          >
+            favorite
           </span>
         </button>
       </div>
 
       {/* Price */}
-      <div className="mb-6">
-        <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
-          ${product.pricePerTon.toFixed(2)}
+      <div className="mb-5">
+        <span className="text-3xl font-extrabold text-gray-900">
+          {price.toLocaleString("fr-DZ")}
         </span>
-        <span className="text-gray-500 text-sm font-medium"> / Ton</span>
-        {product.priceDrop && (
-          <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium flex items-center">
-            <span className="material-icons text-sm mr-1">trending_down</span>
-            {product.priceDrop}
-          </div>
-        )}
+        <span className="text-gray-400 text-sm ml-1">DZD / unit</span>
       </div>
 
-      {/* Availability bar */}
-      <div className="mb-6">
-        <div className="flex justify-between text-sm mb-1">
-          <span className="text-gray-600 dark:text-gray-400">Availability</span>
-          <span className="font-bold text-gray-900 dark:text-white">
-            {product.availableTons} Tons Left
+      {/* Stock bar */}
+      <div className="mb-5">
+        <div className="flex justify-between text-sm mb-1.5">
+          <span className="text-gray-400">Available stock</span>
+          <span className={`font-bold ${inStock ? "text-gray-900" : "text-red-500"}`}>
+            {inStock ? `${product.stock} units` : "Out of Stock"}
           </span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+        <div className="w-full bg-neutral-100 rounded-full h-1.5">
           <div
-            className="bg-primary h-2.5 rounded-full transition-all duration-500"
-            style={{ width: `${availabilityPct}%` }}
+            className={`h-1.5 rounded-full transition-all ${inStock ? "bg-primary" : "bg-neutral-200"}`}
+            style={{ width: inStock ? `${Math.min(100, (product.stock / 500) * 100)}%` : "100%" }}
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1">
-          Min. Order: {product.minOrderTons} Tons
-        </p>
       </div>
 
-      {/* Order form */}
-      <div className="space-y-4 mb-6">
-        {/* Quantity */}
+      {/* Quantity stepper */}
+      <div className="mb-5 space-y-3">
         <div>
-          <label
-            htmlFor="quantity"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            Quantity (Tons)
+          <label htmlFor="qty" className="block text-sm font-medium text-gray-700 mb-1.5">
+            Quantity (units)
           </label>
-          <div className="relative rounded-md shadow-sm">
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.max(MIN_ORDER, q - 1))}
+              disabled={quantity <= MIN_ORDER}
+              className="px-3 py-3 text-gray-400 hover:bg-neutral-50 disabled:opacity-40 transition-colors"
+            >
+              <span className="material-symbols-outlined text-lg">remove</span>
+            </button>
             <input
-              id="quantity"
+              id="qty"
               type="number"
-              min={product.minOrderTons}
-              max={product.availableTons}
+              min={MIN_ORDER}
+              max={maxQty}
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(product.minOrderTons, Number(e.target.value)))}
-              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white pr-16 focus:border-primary focus:ring-primary outline-none sm:text-sm py-3 font-semibold pl-4"
+              onChange={(e) =>
+                setQuantity(Math.min(maxQty, Math.max(MIN_ORDER, Number(e.target.value))))
+              }
+              className="flex-1 text-center py-2 text-sm font-bold text-gray-900 border-x border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <span className="text-gray-500 sm:text-sm font-medium">TONS</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+              disabled={quantity >= maxQty}
+              className="px-3 py-3 text-gray-400 hover:bg-neutral-50 disabled:opacity-40 transition-colors"
+            >
+              <span className="material-symbols-outlined text-lg">add</span>
+            </button>
           </div>
         </div>
 
-        {/* Logistics estimator */}
-        <div className="bg-background-light dark:bg-background-dark p-3 rounded-lg border border-neutral-border dark:border-neutral-border-dark">
-          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-            <span className="material-icons text-gray-400">local_shipping</span>
-            <span>
-              Est. Delivery to{" "}
-              <button
-                type="button"
-                className="font-bold border-b border-dashed border-gray-400 cursor-pointer hover:border-primary hover:text-primary transition-colors"
-                onClick={() => {
-                  const city = prompt("Enter delivery city:", deliveryCity);
-                  if (city) setDeliveryCity(city);
-                }}
-              >
-                {deliveryCity}
-              </button>
-            </span>
+        {/* Shipping estimate */}
+        <div className="bg-neutral-50 border border-neutral-100 rounded-lg p-3 text-xs space-y-1.5">
+          <div className="flex justify-between text-gray-400">
+            <span>Shipping (flat rate)</span>
+            <span className="font-medium text-gray-700">{SHIPPING_FLAT.toLocaleString("fr-DZ")} DZD</span>
           </div>
-          <div className="mt-2 text-xs text-gray-500 flex justify-between">
-            <span>Shipping Cost:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
-              ~${product.estimatedShipping.toFixed(2)}
-            </span>
-          </div>
-          <div className="mt-1 text-xs text-gray-500 flex justify-between">
-            <span>Subtotal ({quantity} tons):</span>
-            <span className="font-medium text-gray-900 dark:text-white">
-              ~${subtotal.toFixed(2)}
-            </span>
+          <div className="flex justify-between font-semibold text-gray-900 border-t border-neutral-200 pt-1.5">
+            <span>Estimated total</span>
+            <span>{subtotal.toLocaleString("fr-DZ")} DZD</span>
           </div>
         </div>
       </div>
 
-      {/* CTA buttons */}
-      <div className="space-y-3">
+      {/* Feedback banner */}
+      {feedback && (
+        <div
+          role="alert"
+          className={`mb-4 flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium ${
+            feedback.type === "success"
+              ? "bg-primary/10 border border-primary/20 text-primary-dark"
+              : "bg-red-50 border border-red-200 text-red-600"
+          }`}
+        >
+          <span
+            className="material-symbols-outlined text-sm shrink-0"
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
+            {feedback.type === "success" ? "check_circle" : "error"}
+          </span>
+          {feedback.msg}
+          {feedback.type === "success" && (
+            <Link href="/Cart" className="ml-auto underline hover:no-underline">
+              View cart
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* CTAs */}
+      <div className="space-y-2.5">
         <button
           type="button"
-          onClick={() => onBuyNow(quantity)}
-          className="w-full bg-primary hover:bg-primary-dark text-black font-bold py-3.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex justify-center items-center gap-2"
+          onClick={handleAddToCart}
+          disabled={!inStock || isAdding}
+          className="w-full flex justify-center items-center gap-2 py-3.5 px-4 rounded-lg font-bold text-sm text-black bg-primary hover:bg-primary-dark shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span>Buy Now</span>
-          <span className="material-icons text-sm">arrow_forward</span>
+          {isAdding ? (
+            <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
+                add_shopping_cart
+              </span>
+              Add to Cart
+            </>
+          )}
         </button>
-        <button
-          type="button"
-          onClick={() => onAddToCart(quantity)}
-          className="w-full bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-semibold py-3.5 px-4 rounded-lg border border-gray-300 dark:border-gray-600 transition-colors flex justify-center items-center gap-2"
+
+        <Link
+          href="/Cart"
+          className="w-full flex justify-center items-center gap-2 py-3.5 px-4 rounded-lg font-semibold text-sm text-gray-900 border border-gray-200 hover:bg-neutral-50 transition-colors"
         >
-          <span className="material-icons text-sm">add_shopping_cart</span>
-          <span>Add to Cart</span>
-        </button>
+          <span className="material-symbols-outlined text-base">shopping_cart</span>
+          View Cart
+        </Link>
       </div>
 
-      <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
-        <span className="material-icons text-sm text-green-600">shield</span>
-        <span>Secure Payment via Ministry Escrow</span>
+      <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+        <span className="material-symbols-outlined text-sm text-green-500" style={{ fontVariationSettings: "'FILL' 1" }}>
+          shield
+        </span>
+        Secure Payment via Ministry Escrow
       </div>
     </div>
   );

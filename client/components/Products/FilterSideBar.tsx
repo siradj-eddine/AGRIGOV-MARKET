@@ -1,138 +1,227 @@
 "use client";
 
-import type { Filters } from "@/types/Product";
+import type { FilterState } from "@/types/Product";
+import {
+  CATEGORY_OPTIONS,
+  SEASON_LABELS,
+  SEASON_ICONS,
+  EMPTY_FILTERS,
+} from "@/types/Product";
+import type { ProductSeason } from "@/types/Product";
 
 interface Props {
-  filters: Filters;
-  onFiltersChange: (filters: Filters) => void;
+  filters: FilterState;
+  onChange: (f: FilterState) => void;
 }
 
-const categories = [
-  { id: "grains", label: "Grains & Cereals" },
-  { id: "veg", label: "Vegetables" },
-  { id: "fruit", label: "Fruits" },
-  { id: "tubers", label: "Tubers" },
-];
+const SEASONS = Object.keys(SEASON_LABELS) as ProductSeason[];
+const RATINGS = [4, 3, 2, 1];
 
-const regions = [
-  "All Regions",
-  "North District",
-  "Central Valley",
-  "Coastal Plains",
-  "Highlands",
-];
+const inputCls =
+  "block w-full py-2 px-3 rounded-lg border border-neutral-200 bg-white text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition";
 
-const grades = ["Grade A", "Grade B", "Export", "Organic"];
+export default function FiltersSidebar({ filters, onChange }: Props) {
+  const set = <K extends keyof FilterState>(key: K, val: FilterState[K]) =>
+    onChange({ ...filters, [key]: val });
 
-export default function FiltersSidebar({ filters, onFiltersChange }: Props) {
-  const toggleCategory = (id: string) => {
-    const updated = filters.categories.includes(id)
-      ? filters.categories.filter((c) => c !== id)
-      : [...filters.categories, id];
-    onFiltersChange({ ...filters, categories: updated });
-  };
-
-  const selectGrade = (grade: string) => {
-    onFiltersChange({
-      ...filters,
-      grade: filters.grade === grade ? null : grade,
-    });
-  };
-
-  const reset = () => {
-    onFiltersChange({ categories: [], region: "All Regions", grade: null });
-  };
+  const isDirty =
+    filters.category   !== EMPTY_FILTERS.category   ||
+    filters.season     !== EMPTY_FILTERS.season     ||
+    filters.min_price  !== EMPTY_FILTERS.min_price  ||
+    filters.max_price  !== EMPTY_FILTERS.max_price  ||
+    filters.in_stock   !== EMPTY_FILTERS.in_stock   ||
+    filters.min_rating !== EMPTY_FILTERS.min_rating;
 
   return (
     <aside className="w-full lg:w-64 shrink-0">
-      <div className="bg-white dark:bg-neutral-surface-dark rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6 sticky top-24">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Filters</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-100 p-5 sticky top-24 space-y-6">
+<span className="material-symbols-outlined">apple</span>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-neutral-900 flex items-center gap-2">
+            <span
+              className="material-symbols-outlined text-primary text-lg"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              filter_list
+            </span>
+            Filters
+          </h2>
+          {isDirty && (
+            <button
+              type="button"
+              onClick={() => onChange({ ...EMPTY_FILTERS })}
+              className="text-xs text-primary-dark font-medium hover:underline"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+
+        {/* ── Category ─────────────────────────────────────────────────────── */}
+        <fieldset>
+          <legend className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+            Category
+          </legend>
+          <div className="space-y-1.5">
+            {CATEGORY_OPTIONS.map((cat) => {
+              const active = filters.category === cat.slug;
+              return (
+                <button
+                  key={cat.slug}
+                  type="button"
+                  onClick={() => set("category", active ? "" : cat.slug)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                    active
+                      ? "bg-primary/10 text-primary-dark"
+                      : "text-neutral-600 hover:bg-neutral-50"
+                  }`}
+                >
+                  <span
+                    className="material-symbols-outlined text-base shrink-0"
+                    style={active ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                  >
+                    {cat.icon}
+                  </span>
+                  {cat.label}
+                  {active && (
+                    <span
+                      className="material-symbols-outlined text-primary text-sm ml-auto"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      check_circle
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <hr className="border-neutral-100" />
+
+        {/* ── Season ───────────────────────────────────────────────────────── */}
+        <fieldset>
+          <legend className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+            Season
+          </legend>
+          <div className="grid grid-cols-2 gap-2">
+            {SEASONS.map((s) => {
+              const active = filters.season === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => set("season", active ? "" : s)}
+                  className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-xs font-medium transition-all ${
+                    active
+                      ? "border-primary bg-primary/10 text-primary-dark"
+                      : "border-neutral-200 text-neutral-600 hover:border-primary/40 hover:bg-neutral-50"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    {SEASON_ICONS[s]}
+                  </span>
+                  {SEASON_LABELS[s]}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <hr className="border-neutral-100" />
+
+        {/* ── Price range ──────────────────────────────────────────────────── */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+            Price Range (DZD / unit)
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              placeholder="Min"
+              value={filters.min_price}
+              onChange={(e) => set("min_price", e.target.value)}
+              className={inputCls}
+            />
+            <span className="text-neutral-400 text-sm shrink-0">–</span>
+            <input
+              type="number"
+              min={0}
+              placeholder="Max"
+              value={filters.max_price}
+              onChange={(e) => set("max_price", e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        <hr className="border-neutral-100" />
+
+        {/* ── In Stock ─────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-neutral-700">In Stock Only</span>
           <button
-            onClick={reset}
-            className="text-sm text-primary-dark font-medium hover:text-primary transition-colors"
+            type="button"
+            role="switch"
+            aria-checked={filters.in_stock === true}
+            onClick={() =>
+              set("in_stock", filters.in_stock === true ? null : true)
+            }
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
+              filters.in_stock === true ? "bg-primary" : "bg-neutral-200"
+            }`}
           >
-            Reset
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                filters.in_stock === true ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
           </button>
         </div>
 
-        <div className="space-y-6">
-          {/* Category */}
-          <fieldset>
-            <legend className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Category
-            </legend>
-            <div className="space-y-2">
-              {categories.map((cat) => (
-                <div key={cat.id} className="flex items-center">
-                  <input
-                    id={cat.id}
-                    type="checkbox"
-                    checked={filters.categories.includes(cat.id)}
-                    onChange={() => toggleCategory(cat.id)}
-                    className="h-4 w-4 text-primary focus:ring-primary border-neutral-300 rounded"
-                  />
-                  <label
-                    htmlFor={cat.id}
-                    className="ml-2 block text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer"
-                  >
-                    {cat.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </fieldset>
+        <hr className="border-neutral-100" />
 
-          <hr className="border-neutral-100 dark:border-neutral-800" />
-
-          {/* Region */}
-          <div>
-            <label
-              htmlFor="region"
-              className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-            >
-              Region
-            </label>
-            <select
-              id="region"
-              value={filters.region}
-              onChange={(e) => onFiltersChange({ ...filters, region: e.target.value })}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-neutral-200 dark:border-neutral-700 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-lg bg-neutral-50 dark:bg-neutral-800"
-            >
-              {regions.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
+        {/* ── Minimum Rating ───────────────────────────────────────────────── */}
+        <div>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+            Minimum Rating
+          </p>
+          <div className="space-y-1.5">
+            {RATINGS.map((r) => {
+              const active = filters.min_rating === String(r);
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => set("min_rating", active ? "" : String(r))}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${
+                    active
+                      ? "border-primary bg-primary/10 text-primary-dark font-medium"
+                      : "border-transparent text-neutral-600 hover:bg-neutral-50"
+                  }`}
+                >
+                  <span className="flex">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span
+                        key={i}
+                        className={`material-symbols-outlined text-base ${
+                          i < r ? "text-yellow-400" : "text-neutral-200"
+                        }`}
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        star
+                      </span>
+                    ))}
+                  </span>
+                  <span className="text-xs">& up</span>
+                </button>
+              );
+            })}
           </div>
-
-          <hr className="border-neutral-100 dark:border-neutral-800" />
-
-          {/* Quality Grade */}
-          <fieldset>
-            <legend className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Quality Grade
-            </legend>
-            <div className="grid grid-cols-2 gap-2">
-              {grades.map((grade) => {
-                const active = filters.grade === grade;
-                return (
-                  <button
-                    key={grade}
-                    type="button"
-                    onClick={() => selectGrade(grade)}
-                    className={`rounded-lg border px-3 py-2 text-sm font-medium text-center transition-all ${
-                      active
-                        ? "border-primary bg-primary/10 text-primary-dark"
-                        : "border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50"
-                    }`}
-                  >
-                    {grade}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
         </div>
+
       </div>
     </aside>
   );

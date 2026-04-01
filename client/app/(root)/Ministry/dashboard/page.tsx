@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import AdminSidebar from "@/components/Ministry/AdminSideBar";
 import AdminHeader from "@/components/Ministry/AdminHeader";
@@ -27,8 +26,6 @@ export default function AdminDashboardPage() {
 
       {/* Main wrapper */}
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-        <AdminHeader onMobileMenuToggle={() => setMobileMenuOpen((v) => !v)} />
-
         {/* Scrollable content */}
         <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-6">

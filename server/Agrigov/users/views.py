@@ -18,11 +18,16 @@ from .serializers import (
     LoginSerializer,
     BuyerProfileSerializer
 )
-
 # Optional: Simple logging
 logger = logging.getLogger(__name__)
 
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
 
+    return {
+        "refresh": str(refresh),
+        "access": str(refresh.access_token),
+    }
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -33,13 +38,16 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        tokens = get_tokens_for_user(user)
+
         return Response(
             {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
                 "message": "User registered successfully",
                 "data": {
-                    "user": UserSerializer(user).data
+                    "user": UserSerializer(user).data,
+                    "tokens": tokens
                 }
             },
             status=status.HTTP_201_CREATED,

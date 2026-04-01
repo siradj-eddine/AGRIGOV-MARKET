@@ -25,8 +25,6 @@ export default function TransporterPage() {
 
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-100 h-screen flex flex-col overflow-hidden">
-      <TransporterHeader />
-
       <main className="flex-1 flex overflow-hidden relative">
         <MissionSidebar
           isOpen={sidebarOpen}

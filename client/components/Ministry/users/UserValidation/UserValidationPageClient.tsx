@@ -66,41 +66,6 @@ export default function FarmerVerificationPage() {
         />
       )}
 
-      {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-6 h-16 shadow-sm border-b border-primary/10">
-        <span className="text-xl font-extrabold text-primary italic">Harvest Intel</span>
-
-        <div className="flex items-center gap-6">
-          <nav className="hidden md:flex items-center gap-8" aria-label="Top navigation">
-            {TOP_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={item.active ? 'page' : undefined}
-                className={
-                  item.active
-                    ? 'text-primary font-semibold text-sm tracking-wide uppercase px-3 py-2 rounded-lg'
-                    : 'text-slate-500 dark:text-slate-400 text-sm font-medium tracking-wide uppercase hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors px-3 py-2 rounded-lg'
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3">
-            <button aria-label="View notifications" className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors active:scale-95">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <button aria-label="Open settings" className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors active:scale-95">
-              <span className="material-symbols-outlined">settings</span>
-            </button>
-            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary/30 relative">
-              <Image src={ADMIN_AVATAR_URL} alt="Admin profile avatar" fill sizes="32px" className="object-cover" priority />
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col h-full w-64 fixed left-0 top-0 z-40 bg-white dark:bg-slate-900 border-r border-primary/10 py-4 pt-20 space-y-2">
         <div className="px-6 mb-8">
