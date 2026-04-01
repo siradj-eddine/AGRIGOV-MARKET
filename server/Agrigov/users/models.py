@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from cloudinary.models import CloudinaryField
-
+from regions.utils import get_region_from_wilaya 
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -60,7 +60,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.email} ({self.role})"
 
-
 class FarmerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="farmer_profile")
 
@@ -94,12 +93,25 @@ class FarmerProfile(models.Model):
     rejection_reason = models.TextField(blank=True)
     rejected_at = models.DateTimeField(null=True, blank=True)
 
+    # ← Add region field
+    region = models.CharField(max_length=20, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Auto-set region from wilaya
+        if self.wilaya:
+            self.region = get_region_from_wilaya(self.wilaya)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"FarmerProfile - {self.user.email}"
-
+    @property
+    def region(self):
+        if self.wilaya:
+            return get_region_from_wilaya(self.wilaya)
+        return "Unknown"
 
 class TransporterProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="transporter_profile")
@@ -131,11 +143,25 @@ class TransporterProfile(models.Model):
     rejection_reason = models.TextField(blank=True)
     rejected_at = models.DateTimeField(null=True, blank=True)
 
+    # ← Add region field
+    region = models.CharField(max_length=20, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Auto-set region from wilaya
+        if self.wilaya:
+            self.region = get_region_from_wilaya(self.wilaya)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"TransporterProfile - {self.user.email}"
+    @property
+    def region(self):
+        if self.wilaya:
+            return get_region_from_wilaya(self.wilaya)
+        return "Unknown"
 
 
 class BuyerProfile(models.Model):
@@ -166,6 +192,11 @@ class BuyerProfile(models.Model):
 
     def __str__(self):
         return f"BuyerProfile - {self.user.email}"
+    @property
+    def region(self):
+        if self.wilaya:
+            return get_region_from_wilaya(self.wilaya)
+        return "Unknown"
 
 
 class MinistryProfile(models.Model):

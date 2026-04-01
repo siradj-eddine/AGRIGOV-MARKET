@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'missions',
     'categories',
     'official_prices',
+    'regions',
     
 ]
 

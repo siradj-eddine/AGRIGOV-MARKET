@@ -45,8 +45,8 @@ class LoginSerializer(serializers.Serializer):
 class FarmerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerProfile
-        fields = ["age", "wilaya", "baladiya", "farm_size", "address", "farmer_card_image", "national_id_image"]
-        read_only_fields = ["is_validated", "validated_at", "rejection_reason", "rejected_at"]
+        fields = ["age", "wilaya", "baladiya", "farm_size", "address", "farmer_card_image", "national_id_image", "region"]
+        read_only_fields = ["is_validated", "validated_at", "rejection_reason", "rejected_at", "region"]
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -65,8 +65,8 @@ class TransporterProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TransporterProfile
-        fields = ["age", "driver_license_image", "grey_card_image", "vehicle_type", "vehicle_model", "vehicle_year", "vehicle_capacity"]
-        read_only_fields = ["is_validated", "validated_at", "rejection_reason", "rejected_at"]
+        fields = ["age", "driver_license_image", "grey_card_image", "vehicle_type", "vehicle_model", "vehicle_year", "vehicle_capacity", "region"]
+        read_only_fields = ["is_validated", "validated_at", "rejection_reason", "rejected_at", "region"]
 
     def create(self, validated_data):
         user = self.context["request"].user

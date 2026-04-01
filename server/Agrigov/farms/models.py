@@ -1,8 +1,10 @@
 from django.db import models
 from django.conf import settings
 
-User = settings.AUTH_USER_MODEL
+# Import the utility!
+from regions.utils import get_region_from_wilaya
 
+User = settings.AUTH_USER_MODEL
 
 class Farm(models.Model):
     farmer = models.OneToOneField(
@@ -21,3 +23,10 @@ class Farm(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.farmer.email}"
+
+    # ADD THIS AT THE BOTTOM:
+    @property
+    def region(self):
+        if self.wilaya:
+            return get_region_from_wilaya(self.wilaya)
+        return "Unknown"
