@@ -52,7 +52,7 @@ export default function PurchaseCard({ product }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-neutral-100 p-6 xl:sticky top-24">
+    <div className="bg-white rounded-xl shadow-lg border border-neutral-100 p-6 top-24">
 
       {/* Title + favourite */}
       <div className="flex items-start justify-between mb-3">

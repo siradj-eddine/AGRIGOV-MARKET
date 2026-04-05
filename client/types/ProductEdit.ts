@@ -1,35 +1,37 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ProductForm {
-  name:        string;
-  varietyCode: string;
-  quantityTons: number;
-  moisturePercent: number;
-  description: string;
-  askingPrice: number;
-  minPrice:    number;
+  name:            string;   // → API title
+  varietyCode:     string;   // included in description on save
+  quantityTons:    number;   // → API stock  (tons; convert to kg if API expects kg)
+  moisturePercent: number;   // enrichment field — included in description
+  description:     string;   // → API description
+  askingPrice:     number;   // → API unit_price
+  minPrice:        number;   // stored locally / not in current API spec
+  in_stock:        boolean;  // → API in_stock (PATCH toggle)
 }
 
 export interface ProductImage {
-  id:       string;
-  src:      string;
-  alt:      string;
+  id:        string;
+  src:       string;
+  alt:       string;
   isPrimary: boolean;
+  file?:     File;   // present only for newly uploaded local images
 }
 
 export interface MarketReference {
-  indexLabel:    string;   // e.g. "CME Group Daily Average (Y-MAZ-GLB)"
-  indexBadge:    string;   // e.g. "Live Market"
-  pricePerTon:   number;
+  indexLabel:  string;
+  indexBadge:  string;
+  pricePerTon: number;
 }
 
 export interface InventoryStatus {
   id:          string;
   label:       string;
   detail:      string;
-  icon:        string;   // Material Symbol
-  iconClass:   string;   // Tailwind colour class
-  borderClass: string;   // Tailwind left-border colour
+  icon:        string;
+  iconClass:   string;
+  borderClass: string;
 }
 
 export interface NavItem {
@@ -43,17 +45,17 @@ export interface NavItem {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 export const SIDEBAR_NAV: NavItem[] = [
-  { label: 'Dashboard', icon: 'dashboard',   href: '/farmer' },
-  { label: 'Fields',    icon: 'potted_plant', href: '/regional' },
-  { label: 'Crops',     icon: 'agriculture',  href: '/farmer/products', active: true, filled: true },
-  { label: 'Inventory', icon: 'inventory_2',  href: '/inventory' },
-  { label: 'Reports',   icon: 'analytics',    href: '/admin/reports' },
+  { label: 'Overview', icon: 'dashboard',    href: '/farmer/dashboard' },
+  { label: 'products',    icon: 'storefront', href: '/farmer/dashboard/products' },
+  { label: 'orders',     icon: 'order_approve',  href: '/farmer/dashboard/orders', active: true, filled: true },
+  { label: 'Logistics', icon: 'local_shipping',  href: '/farmer/dashboard/logistics' },
+  { label: 'Analytics',   icon: 'analytics',    href: '/farmer/dashboard/analytics' },
 ];
 
 export const TOP_NAV: NavItem[] = [
-  { label: 'Dashboard', icon: '', href: '/farmer' },
-  { label: 'Crops',     icon: '', href: '/farmer/products', active: true },
-  { label: 'Inventory', icon: '', href: '/inventory' },
+  { label: 'Overview', icon: '', href: '/farmer/dashboard' },
+  { label: 'products',     icon: '', href: '/farmer/dashboard/products', active: true },
+  { label: 'Inventory', icon: '', href: '/farmer/dashboard/inventory' },
 ];
 
 export const BREADCRUMBS = ['Inventory', 'Crops'] as const;
@@ -67,6 +69,7 @@ export const INITIAL_FORM: ProductForm = {
     'High-grade yellow maize harvested from the North Valley sectors. Tested for aflatoxins and certified organic. Optimal for feed production or industrial processing. Batch processed through modern silos.',
   askingPrice: 425.00,
   minPrice:    405.00,
+  in_stock:    true,
 };
 
 export const PRODUCT_IMAGES: ProductImage[] = [

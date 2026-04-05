@@ -33,6 +33,10 @@ class ProductDetailView(generics.RetrieveAPIView):
 class MyProductsView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = ProductFilter
+    search_fields = ["title", "description", "category__name"]
+    ordering_fields = ["unit_price", "created_at", "average_rating", "stock"]
 
     def get_queryset(self):
         return Product.objects.filter(

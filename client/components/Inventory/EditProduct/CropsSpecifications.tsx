@@ -3,7 +3,7 @@ import { MOISTURE_OPTIMAL_RANGE } from '@/types/ProductEdit';
 
 interface CropSpecificationsCardProps {
   form:     ProductForm;
-  onChange: (field: keyof ProductForm, value: string | number) => void;
+  onChange: (field: keyof ProductForm, value: string | number | boolean) => void;
 }
 
 export default function CropSpecificationsCard({ form, onChange }: CropSpecificationsCardProps) {
@@ -13,7 +13,30 @@ export default function CropSpecificationsCard({ form, onChange }: CropSpecifica
 
   return (
     <section className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-sm border border-primary/10">
-      <h3 className="font-bold text-lg mb-6">Crop Specifications</h3>
+      {/* ── Header row: title + in_stock toggle ── */}
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="font-bold text-lg">Crop Specifications</h3>
+
+        {/* Availability toggle */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={form.in_stock}
+          onClick={() => onChange('in_stock', !form.in_stock)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border-2 transition-all ${
+            form.in_stock
+              ? 'bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400'
+              : 'bg-slate-100 border-slate-300 text-slate-500 dark:bg-slate-800 dark:border-slate-600'
+          }`}
+        >
+          <span
+            className={`w-2 h-2 rounded-full transition-colors ${
+              form.in_stock ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+            }`}
+          />
+          {form.in_stock ? 'In Stock' : 'Out of Stock'}
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Product Name */}
@@ -29,23 +52,6 @@ export default function CropSpecificationsCard({ form, onChange }: CropSpecifica
             type="text"
             value={form.name}
             onChange={(e) => onChange('name', e.target.value)}
-            className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-slate-100 font-medium outline-none transition-all"
-          />
-        </div>
-
-        {/* Variety Code */}
-        <div className="space-y-2">
-          <label
-            htmlFor="variety-code"
-            className="text-xs font-bold uppercase tracking-widest text-slate-500 px-1 block"
-          >
-            Variety Code
-          </label>
-          <input
-            id="variety-code"
-            type="text"
-            value={form.varietyCode}
-            onChange={(e) => onChange('varietyCode', e.target.value)}
             className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-slate-100 font-medium outline-none transition-all"
           />
         </div>
@@ -70,47 +76,6 @@ export default function CropSpecificationsCard({ form, onChange }: CropSpecifica
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm pointer-events-none">
               TONS
-            </span>
-          </div>
-        </div>
-
-        {/* Moisture */}
-        <div className="space-y-2">
-          <label
-            htmlFor="moisture"
-            className="text-xs font-bold uppercase tracking-widest text-slate-500 px-1 block"
-          >
-            Current Moisture
-          </label>
-          <div className="relative">
-            <input
-              id="moisture"
-              type="number"
-              min={0}
-              max={100}
-              step={0.1}
-              value={form.moisturePercent}
-              onChange={(e) => onChange('moisturePercent', parseFloat(e.target.value) || 0)}
-              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 pr-10 focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-slate-100 font-medium outline-none transition-all"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm pointer-events-none">
-              %
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 mt-2 px-1">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                moistureOptimal ? 'bg-primary animate-pulse' : 'bg-amber-500'
-              }`}
-            />
-            <span
-              className={`text-[10px] font-bold uppercase ${
-                moistureOptimal ? 'text-primary' : 'text-amber-500'
-              }`}
-            >
-              {moistureOptimal
-                ? `Optimal Range (${MOISTURE_OPTIMAL_RANGE.min}–${MOISTURE_OPTIMAL_RANGE.max}%)`
-                : `Outside optimal range (${MOISTURE_OPTIMAL_RANGE.min}–${MOISTURE_OPTIMAL_RANGE.max}%)`}
             </span>
           </div>
         </div>

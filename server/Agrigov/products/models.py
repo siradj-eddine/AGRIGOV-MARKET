@@ -8,7 +8,7 @@ class Product(models.Model):
         ("winter", "Winter"),
         ("spring", "Spring"),
         ("summer", "Summer"),
-        ("autumn", "Autumn"),
+        ("fall", "fall"),
     ]
 
     farm = models.ForeignKey(

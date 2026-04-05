@@ -35,7 +35,7 @@ export default function Navbar() {
   const handleLogout = () => {
     document.cookie = "access=; Max-Age=0; path=/";
     document.cookie = "role=; Max-Age=0; path=/";
-    router.push("/auth/login");
+    router.push("/Login");
   };
 
   return (

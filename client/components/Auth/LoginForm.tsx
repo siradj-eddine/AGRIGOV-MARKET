@@ -48,6 +48,7 @@ export default function LoginForm() {
       document.cookie = `role=${user.role}; path=/`;
       localStorage.setItem("access", access);
       localStorage.setItem("refresh", refresh);
+      localStorage.setItem("user", JSON.stringify(user));
 
       router.push(ROLE_DASHBOARD[user.role] ?? "/");
     } catch (err) {

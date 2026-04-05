@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+
+from utils.cloudinary import build_cloudinary_url
 from .models import MinistryProfile, User, FarmerProfile, TransporterProfile, BuyerProfile
 from farms.models import Farm
 from vehicules.models import Vehicle
@@ -9,6 +11,48 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "email", "username", "phone", "role", "is_verified", "is_active", "created_at"]
+
+
+class MeSerializer(serializers.Serializer):
+    user = serializers.SerializerMethodField()
+    profile = serializers.SerializerMethodField()
+    extras = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return UserSerializer(obj).data
+
+
+    def get_profile(self, user):
+        if user.role == User.ROLE_FARMER and hasattr(user, "farmer_profile"):
+            return FarmerProfileSerializer(user.farmer_profile).data
+
+        if user.role == User.ROLE_TRANSPORTER and hasattr(user, "transporter_profile"):
+            return TransporterProfileSerializer(user.transporter_profile).data
+
+        if user.role == User.ROLE_BUYER and hasattr(user, "buyer_profile"):
+            return BuyerProfileSerializer(user.buyer_profile).data
+
+        if user.role == User.ROLE_ADMIN and hasattr(user, "ministry_profile"):
+            return MinistryProfileSerializer(user.ministry_profile).data
+
+        return None
+
+    def get_extras(self, user):
+        data = {}
+
+        if user.role == User.ROLE_FARMER:
+            from farms.models import Farm
+            data["farms_count"] = Farm.objects.filter(farmer=user).count()
+
+        if user.role == User.ROLE_TRANSPORTER:
+            from vehicules.models import Vehicle
+            data["vehicles_count"] = Vehicle.objects.filter(transporter=user).count()
+
+        if user.role == User.ROLE_BUYER:
+            from orders.models import Order
+            data["orders_count"] = Order.objects.filter(buyer__user=user).count()
+
+        return data
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -44,21 +88,32 @@ class LoginSerializer(serializers.Serializer):
 
 
 class FarmerProfileSerializer(serializers.ModelSerializer):
+    farmer_card_image = serializers.SerializerMethodField()
+    national_id_image = serializers.SerializerMethodField()
+
     class Meta:
         model = FarmerProfile
-        fields = ["age", "wilaya", "baladiya", "farm_size", "address", "farmer_card_image", "national_id_image", "region"]
-        read_only_fields = ["is_validated", "validated_at", "rejection_reason", "rejected_at", "region"]
+        fields = [
+            "age",
+            "wilaya",
+            "baladiya",
+            "farm_size",
+            "address",
+            "farmer_card_image",
+            "national_id_image",
+        ]
 
-    def create(self, validated_data):
-        user = self.context["request"].user
-        if user.role != User.ROLE_FARMER:
-            raise serializers.ValidationError("Only farmers allowed")
-        if hasattr(user, "farmer_profile"):
-            raise serializers.ValidationError("Profile already exists")
-        return FarmerProfile.objects.create(user=user, **validated_data)
+    def get_farmer_card_image(self, obj):
+        return build_cloudinary_url(obj.farmer_card_image)
+
+    def get_national_id_image(self, obj):
+        return build_cloudinary_url(obj.national_id_image)
 
 
 class TransporterProfileSerializer(serializers.ModelSerializer):
+    driver_license_image = serializers.SerializerMethodField()
+    grey_card_image = serializers.SerializerMethodField()
+
     vehicle_type = serializers.CharField(write_only=True)
     vehicle_model = serializers.CharField(write_only=True)
     vehicle_year = serializers.IntegerField(write_only=True)
@@ -66,25 +121,21 @@ class TransporterProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TransporterProfile
-        fields = ["age", "driver_license_image", "grey_card_image", "vehicle_type", "vehicle_model", "vehicle_year", "vehicle_capacity", "region"]
-        read_only_fields = ["is_validated", "validated_at", "rejection_reason", "rejected_at", "region"]
+        fields = [
+            "age",
+            "driver_license_image",
+            "grey_card_image",
+            "vehicle_type",
+            "vehicle_model",
+            "vehicle_year",
+            "vehicle_capacity",
+        ]
 
-    def create(self, validated_data):
-        user = self.context["request"].user
-        if user.role != User.ROLE_TRANSPORTER:
-            raise serializers.ValidationError("Only transporters allowed")
-        if hasattr(user, "transporter_profile"):
-            raise serializers.ValidationError("Profile already exists")
-        
-        vehicle_data = {
-            "type": validated_data.pop("vehicle_type"),
-            "model": validated_data.pop("vehicle_model"),
-            "year": validated_data.pop("vehicle_year"),
-            "capacity": validated_data.pop("vehicle_capacity"),
-        }
-        profile = TransporterProfile.objects.create(user=user, **validated_data)
-        Vehicle.objects.create(transporter=user, **vehicle_data)
-        return profile
+    def get_driver_license_image(self, obj):
+        return build_cloudinary_url(obj.driver_license_image)
+
+    def get_grey_card_image(self, obj):
+        return build_cloudinary_url(obj.grey_card_image)
 
 
 class BuyerProfileSerializer(serializers.ModelSerializer):

@@ -1,6 +1,6 @@
-from django.db.models import Avg, F, Sum, Q, Count, Max, Min
-from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, timezone
+
+from django.db.models import Avg, F, Sum
 
 from orders.models import Order, OrderItem
 from products.models import Product
@@ -13,96 +13,130 @@ class DashboardService:
 
     @staticmethod
     def get_farmer_dashboard(user):
-        farm = getattr(user, 'farm', None)
-        if not farm:
-            return {"error": "No farm profile found."}
+        from django.utils import timezone
+        from datetime import timedelta
+        products = Product.objects.filter(farm__farmer=user)
 
-        products = Product.objects.filter(farm=farm)
-        farmer_orders = Order.objects.filter(farm=farm)
-        delivered_orders = farmer_orders.filter(status='delivered')
-
-        # 1. Calculate Current Stock Value
-        # We multiply the current stock by the unit_price for every product on the farm
-        stock_value_data = products.aggregate(
-            total_value=Sum(F('stock') * F('unit_price'))
+        order_items = OrderItem.objects.filter(
+            product_item__product__farm__farmer=user
         )
-        total_stock_value = stock_value_data.get('total_value') or 0
 
-        # 2. Standard metrics
-        revenue_data = delivered_orders.aggregate(total=Sum('total_price'))
-        total_revenue = revenue_data.get('total') or 0
-        
-        low_stock_alerts = products.filter(stock__lt=10).count()
+        delivered_items = order_items.filter(order__status='delivered')
+
+        now = timezone.now()
+        last_30_days = now - timedelta(days=30)
+
+        total_products = products.count()
+
+        total_orders = order_items.count()
+
+        total_revenue = delivered_items.aggregate(
+            total=Sum(F('product_item__unit_price') * F('quantity'))
+        )['total'] or 0
+
+        monthly_revenue = delivered_items.filter(
+            order__created_at__gte=last_30_days
+        ).aggregate(
+            total=Sum(F('product_item__unit_price') * F('quantity'))
+        )['total'] or 0
+
+        avg_rating = products.aggregate(avg=Avg('average_rating'))['avg'] or 0
+
+        top_products = (
+            products.annotate(total_sold=Sum('history_items__order_items__quantity'))
+            .order_by('-total_sold')[:5]
+            .values('id', 'title', 'total_sold')
+        )
+
+        low_stock = products.filter(stock__lt=10).count()
+
+        recent_orders = Order.objects.filter(
+            items__product_item__product__farm__farmer=user
+        ).distinct().order_by('-created_at')[:5].values('id', 'status', 'created_at')
 
         return {
-            "business_summary": {
-                "total_products": products.count(),
-                "total_revenue": float(total_revenue),
-                "average_rating": round(products.aggregate(avg=Avg('average_rating')).get('avg') or 0, 2),
+            "overview": {
+                "total_products": total_products,
+                "total_orders": total_orders,
+                "total_revenue": total_revenue,
+                "monthly_revenue": monthly_revenue,
+                "average_rating": round(avg_rating, 2),
             },
-            "inventory_status": {
-                "total_items_in_stock": products.aggregate(total=Sum('stock')).get('total') or 0,
-                "potential_stock_value": float(total_stock_value), # NEW METRIC
-                "low_stock_warnings": low_stock_alerts,
+            "insights": {
+                "top_products": list(top_products),
+                "low_stock_products": low_stock,
             },
-            "order_metrics": {
-                "pending_orders": farmer_orders.filter(status='pending').count(),
-                "total_items_sold": OrderItem.objects.filter(
-                    order__farm=farm, 
-                    order__status='delivered'
-                ).aggregate(total=Sum('quantity')).get('total') or 0,
-            }
+            "recent_activity": list(recent_orders),
         }
     @staticmethod
     def get_buyer_dashboard(user):
-        """Buyer Insights: Tracks spending and orders."""
-        buyer = getattr(user, 'buyer_profile', None)
-        if not buyer:
-            return {"error": "No buyer profile found"}
+        buyer = user.buyer_profile
 
         orders = Order.objects.filter(buyer=buyer)
-        
+
+        delivered_orders = orders.filter(status='delivered')
+
+        total_orders = orders.count()
+
+        total_spent = delivered_orders.aggregate(
+            total=Sum('total_price')
+        )['total'] or 0
+
+        avg_order_value = (
+            total_spent / total_orders if total_orders > 0 else 0
+        )
+
+        total_reviews = Review.objects.filter(buyer=buyer).count()
+
+        # 🕒 RECENT ORDERS
+        recent_orders = orders.order_by('-created_at')[:5].values(
+            'id', 'status', 'total_price', 'created_at'
+        )
+
         return {
-            "spending_analysis": {
-                "total_spent": float(orders.filter(status='delivered').aggregate(total=Sum('total_price')).get('total') or 0),
-                "average_order_value": float(orders.aggregate(avg=Avg('total_price')).get('avg') or 0),
+            "overview": {
+                "total_orders": total_orders,
+                "total_spent": total_spent,
+                "avg_order_value": round(avg_order_value, 2),
+                "total_reviews": total_reviews,
             },
-            "order_tracking": {
-                "active_shipments": orders.filter(status='shipped').count(),
-                "completed_orders": orders.filter(status='delivered').count(),
-            },
-            "engagement": {
-                "reviews_written": Review.objects.filter(buyer=buyer).count(),
-            }
+            "recent_activity": list(recent_orders),
         }
 
     @staticmethod
     def get_transporter_dashboard(user):
-        """Logistics Hub: Individual performance."""
-        transporter = getattr(user, 'transporter_profile', None)
-        if not transporter:
-            return {"error": "No transporter profile found"}
+        orders = Order.objects.filter(mission__isnull=False, mission__transporter=user)
 
-        assigned_orders = Order.objects.filter(transporter=transporter)
-        total_orders = assigned_orders.count()
-        delivered_count = assigned_orders.filter(status='delivered').count()
+        total_deliveries = orders.filter(status='delivered').count()
+
+        active_deliveries = orders.filter(status='shipped').count()
+
+        total_orders = orders.count()
+
+        completion_rate = (
+            (total_deliveries / total_orders) * 100 if total_orders > 0 else 0
+        )
+
+        recent_deliveries = orders.order_by('-created_at')[:5].values(
+            'id', 'status', 'created_at'
+        )
 
         return {
-            "delivery_performance": {
-                "total_completed": delivered_count,
-                "currently_shipping": assigned_orders.filter(status='shipped').count(),
-                "success_rate": f"{(delivered_count / total_orders * 100) if total_orders > 0 else 0:.1f}%",
+            "overview": {
+                "total_deliveries": total_deliveries,
+                "active_deliveries": active_deliveries,
+                "completion_rate": round(completion_rate, 2),
             },
-            "profile_info": {
-                "vehicle": getattr(transporter, 'vehicle_type', 'Not Set'),
-                "is_available": getattr(transporter, 'is_available', True),
-            }
+            "recent_activity": list(recent_deliveries),
         }
 
     @staticmethod
     def get_admin_dashboard():
         """National Ministry Dashboard."""
         from django.contrib.auth import get_user_model
+        from django.utils import timezone
+        from datetime import timedelta
+
         User = get_user_model()
         now = timezone.now()
         last_30_days = now - timedelta(days=30)
@@ -115,20 +149,38 @@ class DashboardService:
         revenue_data = Order.objects.filter(status='delivered').aggregate(total=Sum('total_price'))
         price_stats = active_prices.aggregate(max_p=Max('max_price'), min_p=Min('min_price'))
 
+        now = timezone.now()
+        last_30_days = now - timedelta(days=30)
+
+        total_users = User.objects.count()
+        new_users = User.objects.filter(created_at__gte=last_30_days).count()
+
+        total_orders = Order.objects.count()
+
+        total_revenue = Order.objects.filter(
+            status='delivered'
+        ).aggregate(total=Sum('total_price'))['total'] or 0
+
+        monthly_revenue = Order.objects.filter(
+            status='delivered',
+            created_at__gte=last_30_days
+        ).aggregate(total=Sum('total_price'))['total'] or 0
+
+        recent_users = User.objects.order_by('-created_at')[:5].values(
+            'id', 'email', 'role', 'created_at'
+        )
+
         return {
-            "national_stats": {
-                "total_users": User.objects.count(),
-                "new_registrations_30d": User.objects.filter(created_at__gte=last_30_days).count(),
-                "total_market_revenue": float(revenue_data.get('total') or 0),
+            "overview": {
+                "total_users": total_users,
+                "new_users_last_30_days": new_users,
+                "total_products": Product.objects.count(),
+                "total_orders": total_orders,
+                "total_revenue": total_revenue,
+                "monthly_revenue": monthly_revenue,
+                "total_reviews": Review.objects.count(),
             },
-            "price_control_hub": {
-                "active_official_prices": active_prices.count(),
-                "price_ceiling_max": float(price_stats.get('max_p') or 0),
-                "price_floor_min": float(price_stats.get('min_p') or 0),
-            },
-            "logistics_network": {
-                "total_transporters": TransporterProfile.objects.count(),
-                "active_logistics_load": Order.objects.filter(status='shipped').count(),
-            },
-            "regions_performance": get_region_comparison()
-        }   
+            "recent_activity": {
+                "recent_users": list(recent_users),
+            }
+        }

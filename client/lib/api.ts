@@ -13,6 +13,17 @@ import type {
   RemoveItemRequest,
 } from "@/types/Cart";
 
+import type {
+  MeResponse,
+  EditableUserFields,
+  ChangePasswordFields,
+  OrderSummary,
+  ReviewSummary,
+  MissionSummary,
+} from "@/types/Profile";
+import { PaginatedProducts } from "@/types/Inventory";
+
+
 const BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
 
 // ─── Typed error ──────────────────────────────────────────────────────────────
@@ -27,22 +38,21 @@ export class ApiError extends Error {
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("access") : null;
-
+  const isFormData = options.body instanceof FormData;
+ 
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers as Record<string, string> | undefined),
     },
   });
 
   const json = await res.json().catch(() => ({}));
-
   if (!res.ok) {
     throw new ApiError(res.status, json?.message ?? json?.detail ?? "Something went wrong.");
   }
-
   return json as T;
 }
 
@@ -73,6 +83,16 @@ export const productApi = {
   list:   (qs: string) => apiFetch<PaginatedResponse<ApiProduct>>(`/api/products/?${qs}`),
   detail: (id: string | number) => apiFetch<ApiProduct>(`/api/products/${id}/`),
 };
+
+
+// ─── Farmer product management ────────────────────────────────────────────────
+ 
+export const farmerProductApi = {
+  detail: (id: string | number) => apiFetch<ApiProduct>(`/api/products/${id}/`),
+  create: (data: FormData) => apiFetch<ApiProduct>("/api/products/create/", { method: "POST", body: data }),
+  update: (id: string | number, data: FormData) => apiFetch<ApiProduct>(`/api/products/${id}/`, { method: "PATCH", body: data }),
+};
+
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
@@ -105,4 +125,73 @@ export const cartApi = {
   /** POST /api/cart/clear_cart/ */
   clearCart: () =>
     apiFetch<CartResponse>("/api/cart/clear_cart/", { method: "DELETE" }),
+};
+
+
+export const profileApi = {
+  /**
+   * GET /api/users/me
+   * Returns the full user + role-specific profile + extras in one call.
+   */
+  me: () => apiFetch<MeResponse>("/api/users/me/"),
+ 
+  /**
+   * PATCH /api/users/me
+   * Update editable account fields (email, username, phone).
+   */
+  updateUser: (body: Partial<EditableUserFields>) =>
+    apiFetch<MeResponse>("/api/users/me/", {
+      method: "PATCH",
+      body:   JSON.stringify(body),
+    }),
+ 
+  /**
+   * PATCH /api/users/me with FormData — used when updating profile fields
+   * that include file uploads (farmer card, national ID, etc.).
+   */
+  updateProfile: (formData: FormData) =>
+    apiFetch<MeResponse>("/api/users/me/", {
+      method: "PATCH",
+      body:   formData,
+    }),
+ 
+  /**
+   * POST /api/users/change-password/
+   */
+  changePassword: (body: ChangePasswordFields) =>
+    apiFetch<{ message: string }>("/api/users/change-password/", {
+      method: "POST",
+      body:   JSON.stringify(body),
+    }),
+ 
+  // ── Activity (buyer) ──────────────────────────────────────────────────────
+ 
+  myOrders: () =>
+    apiFetch<{ results: OrderSummary[] }>("/api/orders/?buyer=me&ordering=-created_at"),
+ 
+  myReviews: () =>
+    apiFetch<{ results: ReviewSummary[] }>("/api/reviews/my-reviews/"),
+ 
+  // ── Activity (transporter) ────────────────────────────────────────────────
+ 
+  myMissions: () =>
+    apiFetch<{ results: MissionSummary[] }>("/api/missions/my-missions/?transporter=me&ordering=-scheduled_at"),
+};
+
+
+export const inventoryApi = {
+  /** GET /api/products/my/ — authenticated farmer's own products */
+  list: (qs: string) =>
+    apiFetch<PaginatedProducts>(`/api/products/my/?${qs}`),
+ 
+  /** DELETE /api/products/{id}/ */
+  delete: (id: number) =>
+    apiFetch<void>(`/api/products/${id}/`, { method: "DELETE" }),
+ 
+  /** PATCH /api/products/{id}/ — e.g. toggle in_stock */
+  patch: (id: number, body: Record<string, unknown>) =>
+    apiFetch(`/api/products/${id}/`, {
+      method: "PATCH",
+      body:   JSON.stringify(body),
+    }),
 };

@@ -11,6 +11,7 @@ from missions.permissions import IsAdmin
 from .models import MinistryProfile, User, FarmerProfile, TransporterProfile, BuyerProfile
 from .serializers import (
     FarmerProfileSerializer,
+    MeSerializer,
     MinistryProfileSerializer,
     RegisterSerializer,
     TransporterProfileSerializer,
@@ -18,7 +19,7 @@ from .serializers import (
     LoginSerializer,
     BuyerProfileSerializer
 )
-# Optional: Simple logging
+
 logger = logging.getLogger(__name__)
 
 def get_tokens_for_user(user):
@@ -83,89 +84,13 @@ class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        user = request.user
-        data = UserSerializer(user).data
-
-        # 1. FARMER PROFILE
-        if user.role == "FARMER" and hasattr(user, 'farmer_profile'):
-            profile = user.farmer_profile
-            
-            # Fetch the farm data if the farmer has created one
-            farm_data = None
-            if hasattr(user, 'farm'):
-                farm = user.farm
-                farm_data = {
-                    'id': farm.id,
-                    'name': farm.name,
-                    'wilaya': farm.wilaya,
-                    'region': farm.region,  # <--- Farm's dynamically calculated region!
-                    'baladiya': farm.baladiya,
-                    'farm_size': farm.farm_size,
-                    'address': farm.address,
-                    'created_at': farm.created_at
-                }
-
-            data['profile'] = {
-                'type': 'farmer',
-                'age': getattr(profile, 'age', None),
-                'wilaya': getattr(profile, 'wilaya', None),
-                'region': getattr(profile, 'region', "Unknown"), 
-                'documents': {
-                    'farmer_card_image': profile.farmer_card_image.url if getattr(profile, 'farmer_card_image', None) else None,
-                    'national_id_image': profile.national_id_image.url if getattr(profile, 'national_id_image', None) else None,
-                },
-                'validation': {
-                    'is_validated': profile.is_validated,
-                    'validated_at': profile.validated_at,
-                    'validated_by': profile.validated_by.email if profile.validated_by else None,
-                    'rejection_reason': profile.rejection_reason,
-                    'rejected_at': profile.rejected_at,
-                },
-                'farm': farm_data  # <--- Perfectly nested Farm data!
-            }
-        
-        # 2. TRANSPORTER PROFILE
-        elif user.role == "TRANSPORTER" and hasattr(user, 'transporter_profile'):
-            profile = user.transporter_profile
-            data['profile'] = {
-                'type': 'transporter',
-                'wilaya': getattr(profile, 'wilaya', None),
-                'region': getattr(profile, 'region', "Unknown"),
-                'validation': {
-                    'is_validated': getattr(profile, 'is_validated', False),
-                    'validated_at': getattr(profile, 'validated_at', None),
-                    'validated_by': profile.validated_by.email if getattr(profile, 'validated_by', None) else None,
-                    'rejection_reason': getattr(profile, 'rejection_reason', ""),
-                    'rejected_at': getattr(profile, 'rejected_at', None),
-                }
-            }
-            
-        # 3. BUYER PROFILE
-        elif user.role == "BUYER" and hasattr(user, 'buyer_profile'):
-            profile = user.buyer_profile
-            data['profile'] = {
-                'type': 'buyer',
-                'age': getattr(profile, 'age', None),
-                'region': getattr(profile, 'region', "Unknown"),
-                'documents': {
-                    'business_license_image': profile.bussiness_license_image.url if getattr(profile, 'bussiness_license_image', None) else None,
-                },
-                'validation': {
-                    'is_validated': profile.is_validated,
-                    'validated_at': profile.validated_at,
-                    'validated_by': profile.validated_by.email if profile.validated_by else None,
-                    'rejection_reason': profile.rejection_reason,
-                    'rejected_at': profile.rejected_at,
-                }
-            }
+        serializer = MeSerializer(request.user)
 
         return Response(
             {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "data": {
-                    "user": data
-                }
+                "data": serializer.data
             },
             status=status.HTTP_200_OK
         )
@@ -698,3 +623,8 @@ class UserDetailView(generics.RetrieveAPIView):
             },
             status=status.HTTP_200_OK
         )
+        
+class AllUsersView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = UserSerializer
+    queryset = User.objects.all().order_by('-created_at')

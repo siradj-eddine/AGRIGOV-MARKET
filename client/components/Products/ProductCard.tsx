@@ -28,7 +28,7 @@ export default function ProductCard({ product }: Props) {
   const price    = parseFloat(product.unit_price);
   const rating   = parseFloat(product.average_rating ?? "0");
   const grade    = gradeInfo(product.average_rating);
-  const farmName = product.farm?.farm_name ?? "Unknown Farm";
+  const farmName = product.farm?.name ?? "Unknown Farm";
   const location = [product.farm?.wilaya, product.farm?.baladiya].filter(Boolean).join(", ");
 
   return (

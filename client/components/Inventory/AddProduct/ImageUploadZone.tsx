@@ -6,7 +6,7 @@ import type { UploadedImage } from "@/types/AddProduct";
 
 interface Props {
   images: UploadedImage[];
-  onAdd: (img: UploadedImage) => void;
+  onAdd:    (img: UploadedImage) => void;
   onRemove: (id: string) => void;
 }
 
@@ -18,7 +18,8 @@ export default function ImageUploadZone({ images, onAdd, onRemove }: Props) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const src = e.target?.result as string;
-      onAdd({ id: `img-${Date.now()}`, src, alt: file.name });
+      // Store the File reference so we can append it to FormData later
+      onAdd({ id: `img-${Date.now()}`, src, alt: file.name, file });
     };
     reader.readAsDataURL(file);
   };
@@ -33,6 +34,8 @@ export default function ImageUploadZone({ images, onAdd, onRemove }: Props) {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
+    // Reset so the same file can be re-selected if removed
+    e.target.value = "";
   };
 
   return (
@@ -59,7 +62,7 @@ export default function ImageUploadZone({ images, onAdd, onRemove }: Props) {
           <span className="material-symbols-outlined text-primary text-3xl">add_a_photo</span>
         </div>
         <p className="text-sm font-medium">Click or drag images to upload</p>
-        <p className="text-xs text-slate-400 mt-1">PNG, JPG or JPEG (Max 5MB)</p>
+        <p className="text-xs text-slate-400 mt-1">PNG, JPG or JPEG (Max 5 MB)</p>
       </div>
 
       <input
@@ -85,6 +88,12 @@ export default function ImageUploadZone({ images, onAdd, onRemove }: Props) {
                 className="object-cover"
                 sizes="80px"
               />
+              {/* Badge: "new" for locally-selected files */}
+              {img.file && (
+                <span className="absolute bottom-1 left-1 bg-primary text-[9px] font-black text-slate-900 px-1 rounded">
+                  NEW
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => onRemove(img.id)}
