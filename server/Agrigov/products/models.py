@@ -55,7 +55,7 @@ class Product(models.Model):
         related_name="products",
     )
 
-    # ← replaces `title = CharField`
+
     ministry_product = models.ForeignKey(
                     MinistryProduct,
                     on_delete=models.PROTECT,

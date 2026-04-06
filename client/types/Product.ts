@@ -30,7 +30,7 @@ export interface ApiProduct {
   average_rating: string | null;
   season: ProductSeason;
   created_at: string;    // ISO-8601
-  category: ApiCategory;
+  category_name: string;
   farm: ApiFarm;
   images: ApiImage[];
 }

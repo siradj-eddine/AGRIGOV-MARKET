@@ -1,172 +1,119 @@
-// ─── Mission Status ───────────────────────────────────────────────────────────
+// ─── API shapes ───────────────────────────────────────────────────────────────
 
-export type MissionStatus = 'In Progress' | 'Upcoming' | 'Completed';
+export type MissionStatus =
+  | 'pending'
+  | 'accepted'
+  | 'picked_up'
+  | 'in_transit'
+  | 'delivered'
+  | 'cancelled';
 
-// ─── Mission Phase (for in-progress cards) ───────────────────────────────────
-
-export type MissionPhase = 'Active Delivery' | 'In Transit';
-
-// ─── Tab ──────────────────────────────────────────────────────────────────────
-
-export interface MissionTab {
-  label:  MissionStatus;
-  count:  number;
+export interface ApiMission {
+  id:               number;
+  order:            number;
+  order_status:     string;
+  transporter:      number | null;
+  vehicle:          number | null;
+  vehicle_info:     string | null;
+  status:           MissionStatus;
+  wilaya:           string;
+  baladiya:         string;
+  pickup_address:   string;
+  delivery_address: string;
+  notes:            string;
+  decline_count:    number;
+  accepted_at:      string | null;
+  picked_up_at:     string | null;
+  delivered_at:     string | null;
+  created_at:       string;
+  updated_at:       string;
 }
 
-// ─── Location ─────────────────────────────────────────────────────────────────
-
-export interface MissionLocation {
-  label:    string;  // e.g. "Pickup - Farmer" | "Drop-off - Buyer"
-  name:     string;
-  address:  string;
-  icon:     string;  // Material Symbol name
-  iconClass?: string; // optional colour override class
+export interface MissionsApiResponse {
+  count:    number;
+  next:     string | null;
+  previous: string | null;
+  results:  ApiMission[];
 }
 
-// ─── Active Mission ───────────────────────────────────────────────────────────
-
-export interface ActiveMission {
-  id:          string;
-  orderId:     string;          // e.g. "#TR-8821"
-  phase:       MissionPhase;
-  mapImageUrl: string;
-  mapImageAlt: string;
-  chipLabel:   string;          // e.g. "Current Trip" | "En Route"
-  chipClass:   string;          // Tailwind classes for the chip
-  payout:      number;
-  pickup:      MissionLocation;
-  dropoff:     MissionLocation;
-  cargo:       string;          // e.g. "Wheat"
-  weightTons:  number;
-  actionLabel: string;          // CTA button text
-  actionIcon:  string;          // Material Symbol name
-  actionClass: string;          // Tailwind classes for the CTA button
+export interface MissionCreatePayload {
+  order:            number;
+  pickup_address:   string;
+  delivery_address: string;
+  notes?:           string;
 }
 
-// ─── Upcoming Mission ─────────────────────────────────────────────────────────
+// ─── Filter params ────────────────────────────────────────────────────────────
 
-export interface UpcomingMission {
-  id:         string;
-  orderId:    string;
-  month:      string;  // e.g. "Oct"
-  day:        number;
-  farm:       string;
-  cargo:      string;  // e.g. "Soybeans (12.5 T)"
-  payout:     number;
+export interface MissionFilterParams {
+  page?:            number;
+  page_size?:       number;
+  status?:          MissionStatus | '';
+  wilaya?:          string;
+  baladiya?:        string;
+  order_id?:        number;
+  transporter_id?:  number;
+  created_after?:   string;
+  created_before?:  string;
+  search?:          string;
+  ordering?:        string;
 }
 
-// ─── Nav Item ─────────────────────────────────────────────────────────────────
+// ─── Display helpers ──────────────────────────────────────────────────────────
 
-export interface NavItem {
-  label:   string;
-  icon:    string;
-  href:    string;
-  active?: boolean;
-  filled?: boolean; // true → FILL=1 on the icon
-  dividerBefore?: boolean;
-}
-
-
-// ─── Sidebar Nav ──────────────────────────────────────────────────────────────
-
-export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: 'dashboard',              href: '/transporter' },
-  { label: 'Missions',  icon: 'task',                   href: '/transporter/missions', active: true, filled: true },
-  { label: 'Fleet',     icon: 'group',                  href: '/transporter/fleet' },
-  { label: 'Earnings',  icon: 'account_balance_wallet', href: '/transporter/earnings' },
-  { label: 'Settings',  icon: 'settings',               href: '/transporter/settings', dividerBefore: true },
-];
-
-// ─── Status Tabs ──────────────────────────────────────────────────────────────
-
-export const MISSION_TABS: MissionTab[] = [
-  { label: 'Upcoming',    count: 4  },
-  { label: 'In Progress', count: 2  },
-  { label: 'Completed',   count: 12 },
-];
-
-export const DEFAULT_TAB: MissionStatus = 'In Progress';
-
-// ─── Active Missions ──────────────────────────────────────────────────────────
-
-export const ACTIVE_MISSIONS: ActiveMission[] = [
-  {
-    id:          'mission-8821',
-    orderId:     '#TR-8821',
-    phase:       'Active Delivery',
-    mapImageUrl: 'https://placeholder.pics/svg/300',
-    mapImageAlt: 'Satellite map view showing delivery route from farm to mill',
-    chipLabel:   'Current Trip',
-    chipClass:   'bg-primary text-background-dark',
-    payout:      450.00,
-    pickup: {
-      label:    'Pickup - Farmer',
-      name:     'Green Valley Farm',
-      address:  '122 Agriculture Rd, Springfield',
-      icon:     'location_on',
-      iconClass: 'text-primary',
-    },
-    dropoff: {
-      label:    'Drop-off - Buyer',
-      name:     'Central Mill & Elevator',
-      address:  'Industrial Zone 4, Port Area',
-      icon:     'flag',
-      iconClass: 'text-slate-400',
-    },
-    cargo:       'Wheat',
-    weightTons:  5.0,
-    actionLabel: 'Confirm Pickup',
-    actionIcon:  'check_circle',
-    actionClass: 'bg-primary hover:bg-primary/90 text-background-dark shadow-lg shadow-primary/20',
-  },
-  {
-    id:          'mission-9045',
-    orderId:     '#TR-9045',
-    phase:       'In Transit',
-    mapImageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmI3HWAxo91q5AxXaT8hRh5wbmdBaPvmLYU9fackxDlUoEkgo_9nev5XUaBwugI5VwsFtsWyXCOQ5PnGtyH4DA7RNm9nP_zIORYCvlbhlEul9ZTntGRcy7jSgAMhadYR_khVcu-X8Zs_aIETy1m1G2ulmm3Qcdf1W3ZZrRAKGIPDvU7XB9x-eKcqg1tN0Fq6mfPOXjBfRFBc2JgE0fkQge2DEqVqUmqURL-Iaosru-ZRoaKd-7VtqXEXtklr_b113UwfWNf5-1SWZ5',
-    mapImageAlt: 'Satellite map view showing long distance route',
-    chipLabel:   'En Route',
-    chipClass:   'bg-slate-900 text-white',
-    payout:      280.00,
-    pickup: {
-      label:    'Pickup - Completed',
-      name:     'Sunny Acres',
-      address:  'Rural Route 9, West Fields',
-      icon:     'check_circle',
-      iconClass: 'text-slate-400',
-    },
-    dropoff: {
-      label:    'Drop-off - Heading To',
-      name:     'Regional Grain Elevator',
-      address:  'Hub 12, Terminal South',
-      icon:     'local_shipping',
-      iconClass: 'text-primary',
-    },
-    cargo:       'Corn',
-    weightTons:  3.2,
-    actionLabel: 'Start Offloading',
-    actionIcon:  'unarchive',
-    actionClass: 'bg-primary/20 hover:bg-primary/30 text-slate-900 dark:text-slate-100',
-  },
-];
-
-// ─── Upcoming Missions ────────────────────────────────────────────────────────
-
-export const UPCOMING_MISSIONS: UpcomingMission[] = [
-  {
-    id:      'upcoming-1102',
-    orderId: '#TR-1102',
-    month:   'Oct',
-    day:     24,
-    farm:    'Blueberry Ridge',
-    cargo:   'Soybeans (12.5 T)',
-    payout:  890.00,
-  },
-];
-
-// ─── Phase label styles ───────────────────────────────────────────────────────
-
-export const PHASE_LABEL_STYLES: Record<ActiveMission['phase'], string> = {
-  'Active Delivery': 'text-primary',
-  'In Transit':      'text-slate-500',
+export const MISSION_STATUS_LABEL: Record<MissionStatus, string> = {
+  pending:    'Pending',
+  accepted:   'Accepted',
+  picked_up:  'Picked Up',
+  in_transit: 'In Transit',
+  delivered:  'Delivered',
+  cancelled:  'Cancelled',
 };
+
+export const MISSION_STATUS_BADGE: Record<MissionStatus, string> = {
+  pending:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  accepted:   'bg-blue-100   text-blue-800   dark:bg-blue-900/30   dark:text-blue-300',
+  picked_up:  'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+  in_transit: 'bg-primary-light text-primary-dark dark:bg-primary/20 dark:text-primary',
+  delivered:  'bg-green-100  text-green-800  dark:bg-green-900/30  dark:text-green-300',
+  cancelled:  'bg-red-100    text-red-800    dark:bg-red-900/30    dark:text-red-300',
+};
+
+export const MISSION_STATUS_ICON: Record<MissionStatus, string> = {
+  pending:    'schedule',
+  accepted:   'check_circle',
+  picked_up:  'inventory',
+  in_transit: 'local_shipping',
+  delivered:  'task_alt',
+  cancelled:  'cancel',
+};
+
+/** Progress bar % per status */
+export const MISSION_STATUS_PROGRESS: Record<MissionStatus, number> = {
+  pending:    10,
+  accepted:   30,
+  picked_up:  55,
+  in_transit: 75,
+  delivered:  100,
+  cancelled:  0,
+};
+
+export const STATUS_FILTER_OPTIONS: { value: MissionStatus | ''; label: string }[] = [
+  { value: '',          label: 'All Statuses' },
+  { value: 'pending',   label: 'Pending' },
+  { value: 'accepted',  label: 'Accepted' },
+  { value: 'picked_up', label: 'Picked Up' },
+  { value: 'in_transit', label: 'In Transit' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+export function formatMissionDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-DZ', {
+    day:   '2-digit',
+    month: 'short',
+    year:  'numeric',
+    hour:  '2-digit',
+    minute:'2-digit',
+  });
+}

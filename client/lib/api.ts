@@ -1,8 +1,3 @@
-/**
- * lib/api.ts
- * Direct fetch wrapper for the Django backend.
- * Base URL: NEXT_PUBLIC_API_URL in .env.local
- */
 
 import type { ApiProduct, FilterState, SortOption, PaginatedResponse } from "@/types/Product";
 import { SORT_TO_ORDERING as SORT_MAP } from "@/types/Product";
@@ -22,7 +17,7 @@ import type {
   MissionSummary,
 } from "@/types/Profile";
 import { PaginatedProducts } from "@/types/Inventory";
-
+import type { OrdersApiResponse, ApiOrderStatus } from "@/types/Orders";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
 
@@ -91,6 +86,79 @@ export const farmerProductApi = {
   detail: (id: string | number) => apiFetch<ApiProduct>(`/api/products/${id}/`),
   create: (data: FormData) => apiFetch<ApiProduct>("/api/products/create/", { method: "POST", body: data }),
   update: (id: string | number, data: FormData) => apiFetch<ApiProduct>(`/api/products/${id}/`, { method: "PATCH", body: data }),
+};
+
+
+
+
+// ─── Farmer order management ──────────────────────────────────────────────────
+ 
+export interface FarmerOrderParams {
+  page?: number; page_size?: number; search?: string;
+  status?: ApiOrderStatus; ordering?: string;
+}
+ 
+export const farmerOrderApi = {
+  list: (params: FarmerOrderParams = {}) => {
+    const p = new URLSearchParams();
+    if (params.page)           p.set("page",      String(params.page));
+    if (params.page_size)      p.set("page_size", String(params.page_size));
+    if (params.search?.trim()) p.set("search",    params.search.trim());
+    if (params.status)         p.set("status",    params.status);
+    if (params.ordering)       p.set("ordering",  params.ordering);
+    const qs = p.toString();
+    return apiFetch<OrdersApiResponse>(`/api/orders/${qs ? `?${qs}` : ""}`);
+  },
+  updateStatus: (id: number, status: ApiOrderStatus) =>
+    apiFetch<{ id: number; status: ApiOrderStatus }>(`/api/orders/${id}/`, {
+      method: "PATCH", body: JSON.stringify({ status }),
+    }),
+};
+
+
+
+// ─── Farmer mission management ────────────────────────────────────────────────
+ 
+import type { MissionsApiResponse, MissionCreatePayload, MissionFilterParams, ApiMission } from "@/types/Missions";
+ 
+export const farmerMissionApi = {
+  /**
+   * GET /api/missions/my-farm/
+   * Farmer's own missions with filter/sort/search params.
+   */
+  list: (params: MissionFilterParams = {}) => {
+    const p = new URLSearchParams();
+    if (params.page)            p.set("page",           String(params.page));
+    if (params.page_size)       p.set("page_size",      String(params.page_size));
+    if (params.status)          p.set("status",         params.status);
+    if (params.wilaya)          p.set("wilaya",         params.wilaya);
+    if (params.baladiya)        p.set("baladiya",       params.baladiya);
+    if (params.order_id)        p.set("order_id",       String(params.order_id));
+    if (params.transporter_id)  p.set("transporter_id", String(params.transporter_id));
+    if (params.created_after)   p.set("created_after",  params.created_after);
+    if (params.created_before)  p.set("created_before", params.created_before);
+    if (params.search?.trim())  p.set("search",         params.search.trim());
+    if (params.ordering)        p.set("ordering",       params.ordering);
+    const qs = p.toString();
+    return apiFetch<MissionsApiResponse>(`/api/missions/my-farm/${qs ? `?${qs}` : ""}`);
+  },
+ 
+  /**
+   * POST /api/missions/
+   * Farmer creates a new mission for a confirmed order.
+   */
+  create: (payload: MissionCreatePayload) =>
+    apiFetch<ApiMission>("/api/missions/", {
+      method: "POST",
+      body:   JSON.stringify(payload),
+    }),
+ 
+  /**
+   * PATCH /api/missions/:id/cancel/
+   * Farmer cancels a pending or accepted mission.
+   */
+  cancel: (id: number) =>
+    apiFetch<ApiMission>(`/api/missions/${id}/cancel/`, { method: "PATCH" }),
 };
 
 

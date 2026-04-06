@@ -1,18 +1,20 @@
-import type { OrderStatus } from "@/types/Orders";
+import type { ApiOrderStatus } from "@/types/Orders";
+import { STATUS_LABELS, STATUS_BADGE, STATUS_ICON } from "@/types/Orders";
 
-const badgeStyles: Record<OrderStatus, string> = {
-  Delivered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  "In Transit": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  Pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  Cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-};
+interface Props {
+  status: ApiOrderStatus;
+  showIcon?: boolean;
+}
 
-export default function OrderStatusBadge({ status }: { status: OrderStatus }) {
+export default function OrderStatusBadge({ status, showIcon = false }: Props) {
   return (
     <span
-      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeStyles[status]}`}
+      className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs leading-5 font-semibold rounded-full ${STATUS_BADGE[status]}`}
     >
-      {status}
+      {showIcon && (
+        <span className="material-icons text-[12px] leading-none">{STATUS_ICON[status]}</span>
+      )}
+      {STATUS_LABELS[status]}
     </span>
   );
 }

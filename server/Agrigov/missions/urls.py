@@ -19,7 +19,7 @@ urlpatterns = [
 
     # TRANSPORTER
     path("available/", AvailableMissionsView.as_view(), name="available-missions"),
-    path("my-missions/", TransporterMissionListView.as_view(), name="transporter-missions"),
+    path("my/", TransporterMissionListView.as_view(), name="transporter-missions"),
     path("<int:pk>/accept/", MissionAcceptView.as_view(), name="mission-accept"),
     path("<int:pk>/decline/", MissionDeclineView.as_view(), name="mission-decline"),
     path("<int:pk>/status/", MissionStatusUpdateView.as_view(), name="mission-status"),

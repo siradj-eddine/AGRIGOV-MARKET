@@ -37,7 +37,7 @@ def create_orders_from_cart(buyer, cart):
 
             product_item = ProductItem.objects.create(
                 product=product,
-                title=product.title,
+                title=product.ministry_product.name,
                 description=product.description,
                 unit_price=item.price,
                 category_name=product.category.name if product.category else None,

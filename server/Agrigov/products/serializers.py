@@ -21,7 +21,6 @@ class MinistryProductSerializer(serializers.ModelSerializer):
 
 
 class MinistryProductWriteSerializer(serializers.ModelSerializer):
-    """Used by admin for create / update."""
     class Meta:
         model = MinistryProduct
         fields = ["id", "name", "category", "description", "is_active"]

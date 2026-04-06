@@ -7,9 +7,29 @@ from .serializers import OrderSerializer, CheckoutSerializer
 from django.http import FileResponse
 from .services.invoice_service import generate_invoice_pdf
 from .services.workflow_service import handle_invoice_generation
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .filters import OrderFilter
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderSerializer
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = OrderFilter
+
+    search_fields = [
+        "id",
+        "buyer__user__username",
+        "farm__name",
+        "items__product_item__title",
+    ]
+
+    ordering_fields = [
+        "created_at",
+        "status",
+        "total_price",
+    ]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         user = self.request.user
@@ -77,10 +97,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         user = request.user
 
-        if user.role == "BUYER" and order.buyer != user.buyer_profile:
-            return Response({"error": "Not allowed"}, status=403)
-
-        if user.role == "FARMER" and order.farm.farmer != user:
+        if (user.role == "BUYER" and order.buyer != user.buyer_profile) or \
+           (user.role == "FARMER" and order.farm.farmer != user):
             return Response({"error": "Not allowed"}, status=403)
 
         pdf_buffer = generate_invoice_pdf(order)
@@ -88,5 +106,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         return FileResponse(
             pdf_buffer,
             as_attachment=True,
-            filename=f"invoice_{order.id}.pdf"
+            filename=f"invoice_{order.id}.pdf",
+            content_type='application/pdf'
         )

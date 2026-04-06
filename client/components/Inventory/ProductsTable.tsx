@@ -40,7 +40,7 @@ function RatingStars({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-export default function ProductsTable({ products, isLoading, onDelete, onToggleStock }: Props) {
+export default function ProductsTable({ products, isLoading, onDelete, onToggleStock }: Props) {  
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
@@ -98,7 +98,7 @@ export default function ProductsTable({ products, isLoading, onDelete, onToggleS
                         <div className="w-12 h-12 rounded-lg overflow-hidden border border-primary/10 relative shrink-0 bg-slate-50">
                           <Image
                             src={imageUrl}
-                            alt={p.title}
+                            alt={"product image"}
                             fill
                             sizes="48px"
                             className="object-cover"

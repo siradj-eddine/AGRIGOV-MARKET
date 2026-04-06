@@ -16,7 +16,7 @@ export default function SpecsTabPanel({ product }: Props) {
 
   /** Build spec rows from the real API fields */
   const specs = [
-    { label: "Category",      value: product.category.name                              },
+    { label: "Category",      value: product.category_name                              },
     { label: "Season",        value: SEASON_LABELS[product.season]                      },
     { label: "Unit Price",    value: `${parseFloat(product.unit_price).toLocaleString("fr-DZ")} DZD` },
     { label: "Stock",         value: `${product.stock} units`                           },

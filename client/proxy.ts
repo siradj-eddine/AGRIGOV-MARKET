@@ -8,7 +8,7 @@ const ROLE_ROUTES: Record<UserRole, string[]> = {
   FARMER: ["/farmer", "/marketplace" ,"/farmer/profile", "/Cart", "/Checkout", "/"],
   BUYER: ["/marketplace", "/buyer/profile", "/Cart", "/Checkout", "/"],
   TRANSPORTER: ["/transporter", "/transporter/profile", "/Cart", "/Checkout", "/"],
-  ADMIN: ["/Ministry", "/"],
+  ADMIN: ["/Ministry/dashboard", "/"],
 };
 
 export function proxy(req: NextRequest) {

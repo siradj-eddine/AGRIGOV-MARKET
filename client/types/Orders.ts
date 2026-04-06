@@ -1,123 +1,100 @@
-export type OrderStatus = "Delivered" | "In Transit" | "Pending" | "Cancelled";
 
-export interface Order {
-  id: string;
-  orderId: string;
-  date: string;
-  supplier: string;
-  product: string;
-  productDetail: string;
-  amount: number;
-  status: OrderStatus;
+export type ApiOrderStatus =
+  | "pending"
+  | "confirmed"
+  | "in_transit"
+  | "delivered"
+  | "cancelled";
+
+export interface ApiOrderProduct {
+  id:            number;
+  title:         string;
+  description:   string;
+  season:        string;
+  unit_price:    string;
+  category_name: string;
 }
 
-export interface InvoiceLineItem {
-  id: string;
-  label: string;
-  amount: number;
+export interface ApiOrderItem {
+  id:          number;
+  product:     ApiOrderProduct;
+  quantity:    number;
+  total_price: number;
 }
 
-export interface InvoiceDetail {
-  orderId: string;
-  status: OrderStatus;
-  supplierName: string;
-  supplierReg: string;
-  supplierAddress: string;
-  lineItems: InvoiceLineItem[];
-  total: number;
-  mapImageUrl: string;
-  routeLabel: string;
-  generatedOn: string;
+export interface ApiOrder {
+  id:               number;
+  buyer:            string;   // "BuyerProfile - buyer@email.com"
+  farm:             string;   // "farm-name - farmer@email.com"
+  total_price:      string;   // decimal string "1050.00"
+  status:           ApiOrderStatus;
+  created_at:       string;   // ISO 8601
+  items:            ApiOrderItem[];
+  allowed_statuses: ApiOrderStatus[];  // actions this farmer can take
 }
 
+export interface OrdersApiResponse {
+  count:    number;
+  next:     string | null;
+  previous: string | null;
+  results:  ApiOrder[];
+}
 
+export function parseBuyerEmail(raw: string): string {
+  const parts = raw.split(" - ");
+  return parts.length > 1 ? parts.slice(1).join(" - ") : raw;
+}
 
-export const orders: Order[] = [
-  {
-    id: "1",
-    orderId: "#AG-8492",
-    date: "Oct 24, 2023",
-    supplier: "Sunnydale Farms",
-    product: "Wheat (Grade A)",
-    productDetail: "500kg Bulk",
-    amount: 1250.0,
-    status: "Delivered",
-  },
-  {
-    id: "2",
-    orderId: "#AG-8488",
-    date: "Oct 20, 2023",
-    supplier: "Highland Fertilizers",
-    product: "NPK 15-15-15",
-    productDetail: "20 Sacks",
-    amount: 840.0,
-    status: "In Transit",
-  },
-  {
-    id: "3",
-    orderId: "#AG-8301",
-    date: "Oct 15, 2023",
-    supplier: "AgroMachinery Ltd",
-    product: "Tractor Parts",
-    productDetail: "Hydraulic Pump",
-    amount: 2100.0,
-    status: "Pending",
-  },
-  {
-    id: "4",
-    orderId: "#AG-8299",
-    date: "Oct 12, 2023",
-    supplier: "River Valley Seeds",
-    product: "Corn Seeds",
-    productDetail: "Hybrid Variety X",
-    amount: 450.0,
-    status: "Delivered",
-  },
-  {
-    id: "5",
-    orderId: "#AG-8255",
-    date: "Oct 05, 2023",
-    supplier: "ChemGrow Ind.",
-    product: "Pesticide",
-    productDetail: "20L Drum",
-    amount: 320.0,
-    status: "Cancelled",
-  },
-];
+export function formatOrderDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-DZ", {
+    day:   "2-digit",
+    month: "short",
+    year:  "numeric",
+  });
+}
 
-export const invoiceDetails: Record<string, InvoiceDetail> = {
-  "1": {
-    orderId: "#AG-8492",
-    status: "Delivered",
-    supplierName: "Sunnydale Farms",
-    supplierReg: "AG-2938-XX",
-    supplierAddress: "12 Farm Road, Crop District",
-    lineItems: [
-      { id: "wheat", label: "Wheat (Grade A) x 500kg", amount: 1150.0 },
-      { id: "transport", label: "Transportation Fee", amount: 80.0 },
-      { id: "tax", label: "Platform Service Tax (2%)", amount: 20.0 },
-    ],
-    total: 1250.0,
-    mapImageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCH2v_oFvhO32irvxZzxAqtkpJIMBM8zC3kgZvsfD18B_ucBjgV1T-vx7AM-oeY0Os-H6xyaHvFpNCH5S9Dgrck9YB2xVd6hpcaT5kipM6yPBrS3VlhfZNPE8B8VD3g8QBO234W72Qki6CHF34311nAHqABW1pYXFb-oWXDIfU1uJWBkd68L8LAnuyU7bTxr52ZYjpYWzC5MfJy2c6RHk90nu7eiAmgToakKKSHXJ-JnyBke8eIO8pv4FgC_PMtAteVp2cg6M7jTLbq",
-    routeLabel: "Route Completed",
-    generatedOn: "Oct 25, 2023",
-  },
-  "2": {
-    orderId: "#AG-8488",
-    status: "In Transit",
-    supplierName: "Highland Fertilizers",
-    supplierReg: "AG-3112-HF",
-    supplierAddress: "48 Highland Ave, Agri Zone",
-    lineItems: [
-      { id: "npk", label: "NPK 15-15-15 x 20 Sacks", amount: 760.0 },
-      { id: "transport", label: "Transportation Fee", amount: 65.0 },
-      { id: "tax", label: "Platform Service Tax (2%)", amount: 15.0 },
-    ],
-    total: 840.0,
-    mapImageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCH2v_oFvhO32irvxZzxAqtkpJIMBM8zC3kgZvsfD18B_ucBjgV1T-vx7AM-oeY0Os-H6xyaHvFpNCH5S9Dgrck9YB2xVd6hpcaT5kipM6yPBrS3VlhfZNPE8B8VD3g8QBO234W72Qki6CHF34311nAHqABW1pYXFb-oWXDIfU1uJWBkd68L8LAnuyU7bTxr52ZYjpYWzC5MfJy2c6RHk90nu7eiAmgToakKKSHXJ-JnyBke8eIO8pv4FgC_PMtAteVp2cg6M7jTLbq",
-    routeLabel: "En Route",
-    generatedOn: "Oct 21, 2023",
-  },
+/** Human-readable status labels */
+export const STATUS_LABELS: Record<ApiOrderStatus, string> = {
+  pending:    "Pending",
+  confirmed:  "Confirmed",
+  in_transit: "In Transit",
+  delivered:  "Delivered",
+  cancelled:  "Cancelled",
 };
+
+/** Tailwind badge classes per status */
+export const STATUS_BADGE: Record<ApiOrderStatus, string> = {
+  pending:    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+  confirmed:  "bg-blue-100   text-blue-800   dark:bg-blue-900/30   dark:text-blue-300",
+  in_transit: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
+  delivered:  "bg-green-100  text-green-800  dark:bg-green-900/30  dark:text-green-300",
+  cancelled:  "bg-red-100    text-red-800    dark:bg-red-900/30    dark:text-red-300",
+};
+
+/** Label for the action button when advancing a status */
+export const STATUS_ACTION_LABEL: Partial<Record<ApiOrderStatus, string>> = {
+  confirmed: "Confirm Order",
+  cancelled: "Cancel Order",
+};
+
+/** Material icon per status */
+export const STATUS_ICON: Record<ApiOrderStatus, string> = {
+  pending:    "schedule",
+  confirmed:  "check_circle",
+  in_transit: "local_shipping",
+  delivered:  "inventory",
+  cancelled:  "cancel",
+};
+
+// ─── Filter type used in the page ────────────────────────────────────────────
+
+export type StatusFilter = "all" | ApiOrderStatus;
+
+export const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all",        label: "All Statuses" },
+  { value: "pending",    label: "Pending" },
+  { value: "confirmed",  label: "Confirmed" },
+  { value: "in_transit", label: "In Transit" },
+  { value: "delivered",  label: "Delivered" },
+  { value: "cancelled",  label: "Cancelled" },
+];

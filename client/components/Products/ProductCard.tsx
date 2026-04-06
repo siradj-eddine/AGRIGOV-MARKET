@@ -30,6 +30,7 @@ export default function ProductCard({ product }: Props) {
   const grade    = gradeInfo(product.average_rating);
   const farmName = product.farm?.name ?? "Unknown Farm";
   const location = [product.farm?.wilaya, product.farm?.baladiya].filter(Boolean).join(", ");
+  
 
   return (
     <div className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-neutral-100 overflow-hidden flex flex-col">
@@ -77,7 +78,7 @@ export default function ProductCard({ product }: Props) {
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-primary-dark uppercase tracking-wider">
-            {product.category.name}
+            {product.category_name}
           </span>
           {product.average_rating && (
             <span className="flex items-center gap-0.5 text-xs text-neutral-500">

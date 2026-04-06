@@ -13,6 +13,9 @@ from .serializers import (
     MissionCancelSerializer,
 )
 from .permissions import IsFarmer, IsTransporter, IsTransporterOrAdmin
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .filters import MissionFilter
 
 
 # ─────────────────────────────────────────────
@@ -35,18 +38,31 @@ class MissionCreateView(generics.CreateAPIView):
 # FARMER: List missions for farmer's own orders
 # ─────────────────────────────────────────────
 class FarmerMissionListView(generics.ListAPIView):
-    """
-    GET /api/missions/my-farm/
-    Farmer sees missions for their farm's orders.
-    """
     serializer_class = MissionSerializer
     permission_classes = [IsFarmer]
 
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = MissionFilter
+
+    search_fields = [
+        "order__id",
+        "pickup_address",
+        "delivery_address",
+        "notes",
+    ]
+
+    ordering_fields = [
+        "created_at",
+        "status",
+        "accepted_at",
+    ]
+    ordering = ["-created_at"]
+
     def get_queryset(self):
-        user = self.request.user  # Get the User instance
+        user = self.request.user
         return Mission.objects.filter(
-            order__farm__farmer=user  # Compare with User
-        ).select_related("order", "transporter", "vehicle").order_by("-created_at")
+            order__farm__farmer=user
+        ).select_related("order", "transporter", "vehicle")
 
 
 # ─────────────────────────────────────────────
@@ -94,6 +110,17 @@ class AvailableMissionsView(generics.ListAPIView):
     """
     serializer_class = MissionSerializer
     permission_classes = [IsTransporter]
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = MissionFilter
+
+    search_fields = [
+        "pickup_address",
+        "delivery_address",
+        "notes",
+    ]
+
+    ordering_fields = ["created_at"]
 
     def get_queryset(self):
         user = self.request.user
@@ -163,7 +190,7 @@ class MissionAcceptView(APIView):
         serializer.is_valid(raise_exception=True)
 
         mission.transporter = request.user
-        mission.vehicle = serializer.validated_data.get("vehicle_id")  # Vehicle object or None
+        mission.vehicle = serializer.validated_data.get("vehicle_id")
         mission.status = Mission.STATUS_ACCEPTED
         mission.accepted_at = timezone.now()
         mission.save()
@@ -248,17 +275,30 @@ class MissionStatusUpdateView(APIView):
 # TRANSPORTER: List own missions
 # ─────────────────────────────────────────────
 class TransporterMissionListView(generics.ListAPIView):
-    """
-    GET /api/missions/my-missions/
-    Transporter sees missions they accepted.
-    """
     serializer_class = MissionSerializer
     permission_classes = [IsTransporter]
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = MissionFilter
+
+    search_fields = [
+        "order__id",
+        "pickup_address",
+        "delivery_address",
+    ]
+
+    ordering_fields = [
+        "created_at",
+        "status",
+        "accepted_at",
+        "delivered_at",
+    ]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         return Mission.objects.filter(
             transporter=self.request.user
-        ).select_related("order", "vehicle").order_by("-created_at")
+        ).select_related("order", "vehicle")
 
 
 # ─────────────────────────────────────────────

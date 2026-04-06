@@ -64,7 +64,7 @@ export default function ProductDetailPage({ productId }: Props) {
   const crumbs = [
     { label: "Marketplace", href: "/marketplace" },
     ...(product
-      ? [{ label: product.category.name, href: `/marketplace?category=${product.category.slug}` }]
+      ? [{ label: product.category_name, href: `/marketplace?category=${product.category_name}` }]
       : []),
     { label: product?.title ?? "Loading…" },
   ];

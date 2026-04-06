@@ -1,122 +1,202 @@
-import Image from "next/image";
-import type { InvoiceDetail } from "@/types/Orders";
+"use client";
+
+import { useState } from "react";
+import type { ApiOrder, ApiOrderStatus } from "@/types/Orders";
+import {
+  parseBuyerEmail,
+  formatOrderDate,
+  STATUS_LABELS,
+  STATUS_BADGE,
+  STATUS_ICON,
+  STATUS_ACTION_LABEL,
+} from "@/types/Orders";
+import OrderStatusBadge from "./OrderStatusBadge";
 
 interface Props {
-  invoice: InvoiceDetail;
+  order: ApiOrder;
+  isUpdating: boolean;
+  onStatusAdvance: (orderId: number, nextStatus: ApiOrderStatus) => void;
 }
 
-export default function InvoicePanel({ invoice }: Props) {
-  const isDelivered = invoice.status === "Delivered";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
+
+export default function InvoicePanel({ order, isUpdating, onStatusAdvance }: Props) {
+  // ── Local State for Invoice Loader ──
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const buyerEmail = parseBuyerEmail(order.buyer);
+  const totalDZD = parseFloat(order.total_price).toLocaleString("fr-DZ", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const nextStatus = order.allowed_statuses[0] ?? null;
+  const actionLabel = nextStatus ? (STATUS_ACTION_LABEL[nextStatus] ?? STATUS_LABELS[nextStatus]) : null;
+
+  const handleDownloadInvoice = async (orderId: number) => {
+    setIsDownloading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/orders/${orderId}/invoice/`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access")}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to download invoice");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `invoice_${orderId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Error downloading invoice");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const actionVariant: Record<string, string> = {
+    confirmed: "bg-primary text-slate-900 hover:opacity-90",
+    cancelled: "bg-red-500 text-white hover:bg-red-600",
+  };
+  const actionClass = nextStatus
+    ? (actionVariant[nextStatus] ?? "bg-primary text-slate-900 hover:opacity-90")
+    : "";
 
   return (
     <div className="lg:col-span-1">
       <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 sticky top-24">
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 rounded-t-xl">
           <div>
-            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-              Order {invoice.orderId}
+            <h3 className="text-lg leading-6 font-semibold text-gray-900 dark:text-white">
+              Order #{order.id}
             </h3>
-            <p className="text-xs text-gray-500 mt-1">Digital Invoice Preview</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Placed {formatOrderDate(order.created_at)}
+            </p>
           </div>
-          <span
-            className={`h-8 w-8 rounded-full flex items-center justify-center ${
-              isDelivered ? "bg-green-100" : "bg-blue-100"
-            }`}
-          >
-            <span
-              className={`material-icons text-sm ${
-                isDelivered ? "text-green-600" : "text-blue-600"
-              }`}
-            >
-              {isDelivered ? "check" : "local_shipping"}
-            </span>
+          <span className={`h-9 w-9 rounded-full flex items-center justify-center ${STATUS_BADGE[order.status]}`}>
+            <span className="material-icons text-sm">{STATUS_ICON[order.status]}</span>
           </span>
         </div>
 
-        {/* Body */}
+        {/* ── Body ── */}
         <div className="px-6 py-6 space-y-6">
-          {/* Supplier */}
-          <div className="flex items-start space-x-4">
-            <div className="shrink-0">
-              <div className="h-10 w-10 rounded bg-indigo-100 flex items-center justify-center text-indigo-700">
-                <span className="material-icons">storefront</span>
-              </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Current Status</span>
+            <OrderStatusBadge status={order.status} showIcon />
+          </div>
+
+          <hr className="border-gray-100 dark:border-gray-700" />
+
+          {/* Buyer Info */}
+          <div className="flex items-start gap-4">
+            <div className="h-10 w-10 rounded bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-700 dark:text-indigo-300 shrink-0">
+              <span className="material-icons text-base">person</span>
             </div>
-            <div>
-              <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                {invoice.supplierName}
-              </h4>
-              <p className="text-xs text-gray-500">Reg: {invoice.supplierReg}</p>
-              <p className="text-xs text-gray-500">{invoice.supplierAddress}</p>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Buyer</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{buyerEmail}</p>
             </div>
           </div>
 
           <hr className="border-gray-100 dark:border-gray-700" />
 
-          {/* Line items */}
+          {/* Line Items */}
           <div>
-            <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Items
-            </h5>
+            <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Items ({order.items.length})</h5>
             <div className="space-y-3">
-              {invoice.lineItems.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-300">{item.label}</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    ${item.amount.toFixed(2)}
+              {order.items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between gap-4 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">{item.product.title}</p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {item.product.category_name} · {item.product.season} · <span className="font-mono">×{item.quantity}</span>
+                    </p>
+                  </div>
+                  <span className="font-semibold text-gray-900 dark:text-white whitespace-nowrap shrink-0">
+                    {item.total_price.toLocaleString("fr-DZ", { minimumFractionDigits: 2 })} <span className="text-xs text-gray-400 font-normal">DZD</span>
                   </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Total */}
+          {/* Total Price Display */}
           <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-500">Total Amount</span>
-            <span className="text-xl font-bold text-gray-900 dark:text-primary">
-              ${invoice.total.toFixed(2)}
+            <span className="text-sm font-medium text-gray-500">Total</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-primary font-mono">
+              {totalDZD} <span className="text-sm font-semibold text-gray-400">DZD</span>
             </span>
           </div>
 
-          {/* Map preview */}
-          <div className="rounded-lg overflow-hidden h-32 relative group">
-            <Image
-              src={invoice.mapImageUrl}
-              alt="Delivery route map"
-              fill
-              className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-              sizes="(max-width: 1024px) 100vw, 384px"
-            />
-            <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-              <span className="bg-white/90 dark:bg-black/80 backdrop-blur px-3 py-1 rounded-full text-xs font-medium shadow-sm">
-                {invoice.routeLabel}
+          {/* Status Advance Button */}
+          {nextStatus && actionLabel && (
+            <button
+              type="button"
+              disabled={isUpdating || isDownloading}
+              onClick={() => onStatusAdvance(order.id, nextStatus)}
+              className={`w-full flex justify-center items-center gap-2 px-4 py-2.5 rounded-md text-sm font-semibold shadow-sm transition-all disabled:opacity-60 ${actionClass}`}
+            >
+              <span className={`material-icons text-base ${isUpdating ? "animate-spin" : ""}`}>
+                {isUpdating ? "progress_activity" : STATUS_ICON[nextStatus]}
               </span>
-            </div>
-          </div>
+              {isUpdating ? "Updating…" : actionLabel}
+            </button>
+          )}
 
-          {/* Actions */}
-          <div className="pt-2 flex flex-col gap-3">
-            <button
-              type="button"
-              className="w-full flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-gray-900 bg-primary hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-            >
-              <span className="material-icons mr-2 text-base">download</span>
-              Download PDF Invoice
-            </button>
-            <button
-              type="button"
-              className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-            >
-              <span className="material-icons mr-2 text-base">print</span>
-              Print
-            </button>
+          {/* ── Document Actions with Loader ── */}
+          <div className="flex flex-col gap-2">
+<button
+  type="button"
+  disabled={isDownloading}
+  onClick={() => handleDownloadInvoice(order.id)}
+  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-semibold shadow-sm 
+             text-gray-900 bg-primary hover:opacity-90 disabled:opacity-70 transition-all"
+>
+  {/* Spinner */}
+  {isDownloading ? (
+    <svg
+      className="w-4 h-4 animate-spin"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"
+      />
+    </svg>
+  ) : (
+    <span className="material-icons text-base">download</span>
+  )}
+
+  {/* Text */}
+  <span className="whitespace-nowrap">
+    {isDownloading ? "Generating PDF..." : "Download Invoice PDF"}
+  </span>
+</button>
           </div>
 
           <p className="text-center text-xs text-gray-400">
-            Official Ministry of Agriculture Document.
-            <br />
-            Generated on {invoice.generatedOn}.
+            Official Ministry of Agriculture Document.<br />
+            Document ID: AGR-{order.id.toString().padStart(6, "0")}
           </p>
         </div>
       </div>
