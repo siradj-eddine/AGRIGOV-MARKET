@@ -35,6 +35,7 @@ export interface ApiProduct {
   in_stock: boolean;
   average_rating: string | null;
   season: ProductSeason;
+  farmer_name: string;
   created_at: string;    // ISO-8601
   category_name: string;
   farm: ApiFarm;

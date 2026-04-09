@@ -36,6 +36,7 @@ function DetailSkeleton() {
 }
 
 export default function ProductDetailPage({ productId }: Props) {
+  
   const [product,   setProduct]   = useState<ApiProduct | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState("");
@@ -132,7 +133,7 @@ export default function ProductDetailPage({ productId }: Props) {
               <div className="lg:col-span-4 space-y-5">
                 {/* PurchaseCard now manages its own cart interaction internally */}
                 <PurchaseCard product={product} />
-                <FarmerProfileWidget farm={product.farm} />
+                <FarmerProfileWidget farm={product.farm} farmerName={product?.farmer_name} />
               </div>
             </div>
             <div className="mt-8">
