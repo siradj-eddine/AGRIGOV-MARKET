@@ -1,11 +1,20 @@
 import type { Metadata } from 'next';
 import MissionDetailPage from '@/components/Transporter/Missions/Details/MissionDetailsPageClient';
 
-export const metadata: Metadata = {
-  title:       'Mission TR-8821 | Transporter Hub',
-  description: 'Active transporter mission detail — route, cargo, and actions',
-};
+interface Props {
+  params: Promise<{ id: string }>;
+}
 
-export default function MissionDetailRoute() {
-  return <MissionDetailPage />;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  return {
+    title: `Mission #${id} | Transporter Hub`,
+    description: 'View mission details, track delivery, and update status',
+  };
+}
+
+export default async function MissionDetailRoute({ params }: Props) {
+  const { id } = await params;
+  console.log('Route - missionId:', id); // ← Add this to debug
+  return <MissionDetailPage missionId={id} />;
 }

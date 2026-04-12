@@ -12,7 +12,7 @@ import {
   formatMissionDate,
 } from "@/types/Missions";
 import { farmerMissionApi, ApiError } from "@/lib/api";
-import FarmerSidebar from "@/components/Inventory/AddProduct/FarmSidebar";
+// import FarmerSidebar from "@/components/Inventory/AddProduct/FarmSidebar";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 

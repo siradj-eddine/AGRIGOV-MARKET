@@ -12,13 +12,13 @@ export interface MissionStop {
 }
 
 export interface CargoInfo {
-  name:     string;
-  variety:  string;
-  icon:     string;   // Material Symbol name
+  name: string;
+  variety: string;
+  icon: string;
   weightTons: number;
-  lotNumber:  string;
+  lotNumber: string;
+  totalPrice?: string | null;   // ← add
 }
-
 export interface MapStat {
   icon:  string;
   value: string;

@@ -11,7 +11,6 @@ export default function CargoCard({ cargo }: CargoCardProps) {
         Cargo Information
       </h3>
 
-      {/* Cargo identity */}
       <div className="flex items-center gap-4 mb-6">
         <div className="h-12 w-12 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-primary shadow-sm shrink-0">
           <span className="material-symbols-outlined text-3xl">{cargo.icon}</span>
@@ -22,14 +21,21 @@ export default function CargoCard({ cargo }: CargoCardProps) {
         </div>
       </div>
 
-      {/* Stats grid */}
       <div className="grid grid-cols-2 gap-4">
+        {/* Show weight only if available, otherwise show order value */}
         <div className="bg-white/50 dark:bg-slate-800 p-3 rounded-lg">
-          <p className="text-[10px] font-bold text-slate-400 uppercase">Weight</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase">
+            {cargo.weightTons > 0 ? 'Weight' : 'Order Value'}
+          </p>
           <p className="font-bold text-slate-900 dark:text-slate-100">
-            {cargo.weightTons.toFixed(1)} Tons
+            {cargo.weightTons > 0
+              ? `${cargo.weightTons.toFixed(1)} T`
+              : cargo.totalPrice
+              ? `${parseFloat(cargo.totalPrice).toLocaleString()} DZD`
+              : '—'}
           </p>
         </div>
+
         <div className="bg-white/50 dark:bg-slate-800 p-3 rounded-lg">
           <p className="text-[10px] font-bold text-slate-400 uppercase">Lot #</p>
           <p className="font-bold text-slate-900 dark:text-slate-100">{cargo.lotNumber}</p>

@@ -2,21 +2,36 @@
 
 import { useState } from "react";
 import type { ActiveMission } from "@/types/Transporter";
-import { MISSION_STEPS } from "@/types/Transporter";
+import { MISSION_STEPS, stepToStatus } from "@/types/Transporter";
 
 interface Props {
   mission: ActiveMission;
+  onStatusUpdate?: (missionId: number, newStatus: string) => void;
+  isLoading?: boolean;
 }
 
-export default function ActiveMissionStrip({ mission }: Props) {
+export default function ActiveMissionStrip({ mission, onStatusUpdate, isLoading: externalLoading }: Props) {
+  const [internalLoading, setInternalLoading] = useState(false);
+  const isLoading = externalLoading || internalLoading;
   const [currentStep, setCurrentStep] = useState(mission.currentStep);
 
-  const handleUpdateStatus = () => {
+  const handleUpdateStatus = async () => {
     const i = MISSION_STEPS.indexOf(currentStep);
     if (i < MISSION_STEPS.length - 1) {
-      setCurrentStep(MISSION_STEPS[i + 1]);
+      const nextStep = MISSION_STEPS[i + 1];
+      const newStatus = stepToStatus[nextStep];
+      
+      if (onStatusUpdate) {
+        setInternalLoading(true);
+        await onStatusUpdate(mission.missionId, newStatus);
+        setCurrentStep(nextStep);
+        setInternalLoading(false);
+      }
     }
   };
+
+  const stepIndex = MISSION_STEPS.indexOf(currentStep);
+  const isComplete = currentStep === "Delivered";
 
   return (
     <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-background-light dark:bg-background-dark">
@@ -30,22 +45,17 @@ export default function ActiveMissionStrip({ mission }: Props) {
       </div>
 
       <div className="bg-white dark:bg-[#1a2e1a] border border-slate-200 dark:border-slate-600 rounded-lg p-3 shadow-sm">
-        {/* Cargo + ETA */}
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-semibold">{mission.cargo}</span>
           <span className="text-xs text-slate-500">
-            ETA:{" "}
-            {currentStep === "Delivered"
-              ? "Arrived"
-              : `${mission.etaMins} mins`}
+            ETA: {isComplete ? "Arrived" : `${mission.etaMins} mins`}
           </span>
         </div>
 
         {/* Step progress */}
         <div className="flex items-center justify-between text-xs mb-3">
-          {MISSION_STEPS.map((step, i) => {
-            const stepIdx = MISSION_STEPS.indexOf(currentStep);
-            const isDone = i < stepIdx;
+          {MISSION_STEPS.map((step, idx) => {
+            const isDone = idx < stepIndex;
             const isActive = step === currentStep;
 
             return (
@@ -60,9 +70,7 @@ export default function ActiveMissionStrip({ mission }: Props) {
                         : "border-slate-300 bg-slate-100 dark:bg-slate-800 dark:border-slate-600"
                     }`}
                   >
-                    {isDone && (
-                      <span className="material-icons text-[10px]">check</span>
-                    )}
+                    {isDone && <span className="material-icons text-[10px]">check</span>}
                   </div>
                   <span
                     className={
@@ -74,7 +82,7 @@ export default function ActiveMissionStrip({ mission }: Props) {
                     {step}
                   </span>
                 </div>
-                {i < MISSION_STEPS.length - 1 && (
+                {idx < MISSION_STEPS.length - 1 && (
                   <div
                     className={`h-0.5 flex-1 mx-1 transition-all ${
                       isDone ? "bg-primary" : "bg-slate-200 dark:bg-slate-600"
@@ -89,10 +97,16 @@ export default function ActiveMissionStrip({ mission }: Props) {
         <button
           type="button"
           onClick={handleUpdateStatus}
-          disabled={currentStep === "Delivered"}
-          className="w-full bg-primary hover:bg-green-400 text-black font-bold py-2 px-4 rounded shadow-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading || isComplete}
+          className="w-full bg-primary hover:bg-green-400 text-black font-bold py-2 px-4 rounded shadow-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {currentStep === "Delivered" ? "Mission Complete ✓" : "Update Status"}
+          {isLoading ? (
+            <span className="material-icons animate-spin text-sm">progress_activity</span>
+          ) : isComplete ? (
+            "Mission Complete ✓"
+          ) : (
+            "Update Status"
+          )}
         </button>
       </div>
     </div>

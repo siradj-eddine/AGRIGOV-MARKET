@@ -1,76 +1,101 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { NAV_ITEMS } from '@/types/Missions';
+"use client";
 
-export default function MissionSidebar() {
+import { useState } from "react";
+import type { SidebarTab, TransportRequest, ActiveMission } from "@/types/Transporter";
+import RequestCard from "@/components/Transporter/RequestCard";
+import ActiveMissionStrip from "@/components/Transporter/ActiveMissions";
+
+interface Props {
+  isOpen: boolean;
+  availableRequests: TransportRequest[];
+  activeMission: ActiveMission | null;
+  loadingId: number | null;
+  onSelectRequest: (req: TransportRequest) => void;
+  onAcceptMission: (id: number) => void;
+  onDeclineMission: (id: number) => void;
+}
+
+export default function MissionSidebar({
+  isOpen,
+  availableRequests,
+  activeMission,
+  loadingId,
+  onSelectRequest,
+  onAcceptMission,
+  onDeclineMission,
+}: Props) {
+  const [activeTab, setActiveTab] = useState<SidebarTab>("Available");
+
   return (
-    <aside className="w-64 shrink-0 bg-white dark:bg-background-dark border-r border-primary/20 flex flex-col h-full">
-      {/* Logo */}
-      <div className="p-6">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-full bg-primary flex items-center justify-center text-background-dark shrink-0">
-            <span className="material-symbols-outlined font-bold">local_shipping</span>
-          </div>
-          <div>
-            <h1 className="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">
-              Transporter Hub
-            </h1>
-            <p className="text-primary text-xs font-medium">Logistics Management</p>
-          </div>
+    <aside
+      className={`w-96 bg-white dark:bg-[#152815] border-r border-slate-200 dark:border-slate-700 flex flex-col z-10 shadow-lg h-full transition-transform duration-300 absolute md:relative ${
+        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      }`}
+    >
+      {/* Tabs */}
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+          {(["Available", "My Missions"] as SidebarTab[]).map((tab) => {
+            const isActive = activeTab === tab;
+            const label =
+              tab === "Available"
+                ? `Available (${availableRequests.length})`
+                : `My Missions (${activeMission ? 1 : 0})`;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 px-3 text-sm font-medium rounded transition-all ${
+                  isActive
+                    ? "bg-white dark:bg-[#1a2e1a] text-primary-dark dark:text-primary font-semibold shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-4 space-y-2 overflow-y-auto" aria-label="Transporter navigation">
-        {NAV_ITEMS.map((item) => (
-          <div key={item.href}>
-            {item.dividerBefore && (
-              <div className="pt-4 mt-4 border-t border-primary/10" />
-            )}
-            <Link
-              href={item.href}
-              aria-current={item.active ? 'page' : undefined}
-              className={
-                item.active
-                  ? 'flex items-center gap-3 px-3 py-2 bg-primary/20 text-slate-900 dark:text-slate-100 rounded-lg border border-primary/30'
-                  : 'flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-primary/10 rounded-lg transition-colors'
-              }
-            >
-              <span
-                className={`material-symbols-outlined ${item.active ? 'text-primary' : ''}`}
-                style={
-                  item.filled
-                    ? { fontVariationSettings: "'FILL' 1" }
-                    : undefined
-                }
-              >
-                {item.icon}
-              </span>
-              <span className={`text-sm ${item.active ? 'font-bold' : 'font-medium'}`}>
-                {item.label}
-              </span>
-            </Link>
-          </div>
-        ))}
-      </nav>
-
-      {/* User profile */}
-      <div className="p-4 border-t border-primary/10">
-        <div className="flex items-center gap-3 px-2 py-3 bg-primary/5 rounded-xl">
-          <div className="size-10 rounded-full overflow-hidden relative shrink-0">
-            <Image
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuD81k4T8fU045VF9IhKrNaWAAGsHY6uOTQU6uBs_03vJaRjgBzbxfhZLFKfGnlGvy1oAIvjNnR2bj9Jo8xmBz9lf7Li9KZUoJUHr_BJEqoV5goGVAFhwFvu6GGkYZw9MskLhDTSX7zk5clptWPxu2GKCN1lv4v_aAlGpQXch6so0qZNDswLfSsRhmQ_asvzJQkgRL1snk6rUH3uVwXny8nP4zg1d5jaGJJMaJs2u7sjQTeEB4F3GCIrwlsp2ESHOL0WH_jEqBuIMm-s"
-              alt="User profile avatar portrait"
-              fill
-              sizes="40px"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-bold truncate">Alex Rivera</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Fleet Manager</p>
-          </div>
+      {/* Scrollable list */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollbarWidth: "thin" }}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            {activeTab === "Available" ? "Nearby Requests" : "Accepted Missions"}
+          </h2>
+          <button
+            type="button"
+            className="text-xs text-primary font-medium hover:underline"
+          >
+            Filter
+          </button>
         </div>
+
+        {activeTab === "Available" &&
+          availableRequests.map((req) => (
+            <RequestCard
+              key={req.id}
+              request={req}
+              loadingId={loadingId}
+              onViewRoute={onSelectRequest}
+              onAccept={() => onAcceptMission(req.id)}
+              onDecline={() => onDeclineMission(req.id)}
+            />
+          ))}
+
+        {activeTab === "My Missions" && (
+          <>
+            {activeMission ? (
+              <ActiveMissionStrip mission={activeMission} />
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">
+                No active missions.
+              </p>
+            )}
+          </>
+        )}
       </div>
     </aside>
   );
