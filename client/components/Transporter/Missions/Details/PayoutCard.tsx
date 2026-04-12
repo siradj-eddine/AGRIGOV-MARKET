@@ -16,7 +16,7 @@ export default function PayoutCard({ payout, progressPercent }: PayoutCardProps)
           Guaranteed Payout
         </p>
         <div className="text-4xl font-black tracking-tight mb-4">
-          ${payout.toFixed(2)}
+          {payout.toFixed(2)} DZD
         </div>
         <div className="flex items-center gap-2 text-slate-700">
           <span className="material-symbols-outlined text-sm">check_circle</span>

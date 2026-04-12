@@ -3,7 +3,7 @@ interface MissionActionsProps {
   syncedAgo:    string;
   onScanQR:     () => void;
   onUpdateStatus: () => void;
-  onContactSupport: () => void;
+  // onContactSupport: () => void;
   isScanLoading:   boolean;
   isUpdateLoading: boolean;
 }
@@ -13,7 +13,7 @@ export default function MissionActions({
   syncedAgo,
   onScanQR,
   onUpdateStatus,
-  onContactSupport,
+  // onContactSupport,
   isScanLoading,
   isUpdateLoading,
 }: MissionActionsProps) {
@@ -48,13 +48,13 @@ export default function MissionActions({
       </button>
 
       {/* Tertiary CTA */}
-      <button
+      {/* <button
         onClick={onContactSupport}
         className="w-full h-14 bg-transparent border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-xl flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] transition-all"
       >
         <span className="material-symbols-outlined">support_agent</span>
         Contact Support
-      </button>
+      </button> */}
 
       {/* Live status indicator */}
       <div className="flex items-center justify-between p-4 bg-primary/5 dark:bg-slate-800 rounded-xl border border-primary/10">

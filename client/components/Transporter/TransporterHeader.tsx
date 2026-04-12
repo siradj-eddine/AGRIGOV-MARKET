@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { DriverStatus } from "@/types/Transporter";
-import { DRIVER_AVATAR_URL } from "@/types/Transporter";
 
 const STATUS_CYCLE: DriverStatus[] = ["Online", "Offline", "On Break"];
 const statusDotClass: Record<DriverStatus, string> = {
@@ -11,6 +10,9 @@ const statusDotClass: Record<DriverStatus, string> = {
   Offline: "bg-slate-400",
   "On Break": "bg-amber-400",
 };
+
+// Fallback avatar URL (you can replace with dynamic user avatar later)
+const FALLBACK_AVATAR_URL = "https://ui-avatars.com/api/?background=0df20d&color=000&name=Driver";
 
 export default function TransporterHeader() {
   const [status, setStatus] = useState<DriverStatus>("Online");
@@ -66,13 +68,13 @@ export default function TransporterHeader() {
         {/* User profile */}
         <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-semibold leading-none">Marcus Cole</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Vehicle: 5-Ton Truck</p>
+            <p className="text-sm font-semibold leading-none">Driver Name</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Vehicle: Truck</p>
           </div>
           <div className="relative w-9 h-9 shrink-0">
             <Image
-              src={DRIVER_AVATAR_URL}
-              alt="Profile picture of driver Marcus Cole"
+              src={FALLBACK_AVATAR_URL}
+              alt="Driver avatar"
               fill
               className="rounded-full object-cover border border-slate-200 dark:border-slate-600"
               sizes="36px"

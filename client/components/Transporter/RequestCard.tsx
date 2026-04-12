@@ -3,16 +3,19 @@ import { cargoTagStyles } from "@/types/Transporter";
 
 interface Props {
   request: TransportRequest;
+  loadingId: number | null;
   onViewRoute: (req: TransportRequest) => void;
+  onAccept: () => void;
+  onDecline: () => void;
 }
 
-export default function RequestCard({ request, onViewRoute }: Props) {
+export default function RequestCard({ request, loadingId, onViewRoute, onAccept, onDecline }: Props) {
+  const isLoading = loadingId === request.id;
+
   return (
     <div className="group bg-white dark:bg-[#1a2e1a] border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-primary transition-all cursor-pointer shadow-sm hover:shadow-md relative overflow-hidden">
-      {/* Left accent bar */}
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
 
-      {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <div>
           <span
@@ -27,7 +30,6 @@ export default function RequestCard({ request, onViewRoute }: Props) {
         </span>
       </div>
 
-      {/* Weight + distance */}
       <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 mb-3">
         <div className="flex items-center gap-1">
           <span className="material-icons text-base text-slate-400">scale</span>
@@ -39,7 +41,6 @@ export default function RequestCard({ request, onViewRoute }: Props) {
         </div>
       </div>
 
-      {/* Route */}
       <div className="space-y-2 mb-4 relative pl-1">
         <div className="absolute left-1.25 top-2 bottom-2 w-0.5 border-l border-dashed border-slate-300 dark:border-slate-600" />
         <div className="flex items-center gap-3">
@@ -52,15 +53,35 @@ export default function RequestCard({ request, onViewRoute }: Props) {
         </div>
       </div>
 
-      {/* CTA */}
-      <button
-        type="button"
-        onClick={() => onViewRoute(request)}
-        className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg text-sm transition-colors flex items-center justify-center gap-2 group-hover:bg-primary group-hover:text-black"
-      >
-        View Route Details
-        <span className="material-icons text-sm">arrow_forward</span>
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onDecline}
+          disabled={isLoading}
+          className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg text-sm transition-colors disabled:opacity-50"
+        >
+          Decline
+        </button>
+        <button
+          type="button"
+          onClick={onAccept}
+          disabled={isLoading}
+          className="flex-1 py-2 bg-primary hover:bg-green-400 text-black font-semibold rounded-lg text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {isLoading ? (
+            <span className="material-icons animate-spin text-sm">progress_activity</span>
+          ) : (
+            "Accept"
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => onViewRoute(request)}
+          className="py-2 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg text-sm transition-colors"
+        >
+          <span className="material-icons text-sm">arrow_forward</span>
+        </button>
+      </div>
     </div>
   );
 }

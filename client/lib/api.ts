@@ -20,6 +20,13 @@ import { PaginatedProducts } from "@/types/Inventory";
 import type { OrdersApiResponse, ApiOrderStatus } from "@/types/Orders";
 import type { ApiDashboardResponse, ApiPendingUsersResponse } from "@/types/UserManagement";
 import type { ApiUserDetailResponse, ApiValidateResponse, ApiRejectResponse } from "@/types/UserValidation";
+
+import type { 
+  TransportRequest, 
+  ActiveMission, 
+  MissionStatus 
+} from "@/types/Transporter";
+
 import type { CategoriesApiResponse, ApiCategory, CategoryPayload } from "@/types/CategoryManagement";
  
 const BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
@@ -343,6 +350,74 @@ export const ministryApi = {
     }),
 };
 
+export const transporterApi = {
+  /**
+   * GET /api/missions/available/
+   * Get available missions for transporter (based on their wilaya)
+   */
+  getAvailableMissions: (params?: { search?: string; ordering?: string }) => {
+    const p = new URLSearchParams();
+    if (params?.search) p.set("search", params.search);
+    if (params?.ordering) p.set("ordering", params.ordering);
+    const qs = p.toString();
+    return apiFetch<MissionsApiResponse>(`/api/missions/available/${qs ? `?${qs}` : ""}`);
+  },
+
+  /**
+   * GET /api/missions/my/
+   * Get missions accepted by this transporter
+   */
+  getMyMissions: (params?: { search?: string; status?: string; ordering?: string }) => {
+    const p = new URLSearchParams();
+    if (params?.search) p.set("search", params.search);
+    if (params?.status) p.set("status", params.status);
+    if (params?.ordering) p.set("ordering", params.ordering);
+    const qs = p.toString();
+    return apiFetch<MissionsApiResponse>(`/api/missions/my/${qs ? `?${qs}` : ""}`);
+  },
+
+  /**
+   * POST /api/missions/{id}/accept/
+   * Accept a mission
+   */
+  acceptMission: (missionId: number, vehicleId?: number) =>
+    apiFetch<ApiMission>(`/api/missions/${missionId}/accept/`, {
+      method: "POST",
+      body: vehicleId ? JSON.stringify({ vehicle_id: vehicleId }) : "{}",
+    }),
+
+  /**
+   * POST /api/missions/{id}/decline/
+   * Decline a mission
+   */
+  declineMission: (missionId: number) =>
+    apiFetch<{ detail: string }>(`/api/missions/${missionId}/decline/`, {
+      method: "POST",
+      body: "{}",
+    }),
+
+  /**
+   * PATCH /api/missions/{id}/status/
+   * Update mission status (picked_up, in_transit, delivered)
+   */
+  updateMissionStatus: (missionId: number, status: "picked_up" | "in_transit" | "delivered") =>
+    apiFetch<ApiMission>(`/api/missions/${missionId}/status/`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  /**
+   * GET /api/vehicules/me/
+   * Get transporter's vehicles
+   */
+  getMyVehicles: () =>
+    apiFetch<{ count: number; results: { id: number; type: string; model: string; year: number; capacity: number }[] }>(
+      "/api/vehicules/me/"
+    ),
+    // In transporterApi object
+  getMissionDetail: (missionId: number) =>
+  apiFetch<ApiMission>(`/api/missions/${missionId}/`),
+};
 
 // ─── Category management (Ministry) ──────────────────────────────────────────
  

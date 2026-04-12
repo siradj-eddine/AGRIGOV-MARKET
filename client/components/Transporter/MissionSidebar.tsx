@@ -1,17 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import type { SidebarTab, TransportRequest } from "@/types/Transporter";
-import { availableRequests, activeMission } from "@/types/Transporter";
-import RequestCard from "./RequestCard";
-import ActiveMissionStrip from "./ActiveMissions";
+import type { SidebarTab, TransportRequest, ActiveMission } from "@/types/Transporter";
+import RequestCard from "@/components/Transporter/RequestCard";
+import ActiveMissionStrip from "@/components/Transporter/ActiveMissions";
 
 interface Props {
   isOpen: boolean;
+  availableRequests: TransportRequest[];
+  activeMission: ActiveMission | null;
+  loadingId: number | null;
   onSelectRequest: (req: TransportRequest) => void;
+  onAcceptMission: (id: number) => void;
+  onDeclineMission: (id: number) => void;
 }
 
-export default function MissionSidebar({ isOpen, onSelectRequest }: Props) {
+export default function MissionSidebar({
+  isOpen,
+  availableRequests,
+  activeMission,
+  loadingId,
+  onSelectRequest,
+  onAcceptMission,
+  onDeclineMission,
+}: Props) {
   const [activeTab, setActiveTab] = useState<SidebarTab>("Available");
 
   return (
@@ -28,7 +40,7 @@ export default function MissionSidebar({ isOpen, onSelectRequest }: Props) {
             const label =
               tab === "Available"
                 ? `Available (${availableRequests.length})`
-                : "My Missions (1)";
+                : `My Missions (${activeMission ? 1 : 0})`;
             return (
               <button
                 key={tab}
@@ -66,19 +78,25 @@ export default function MissionSidebar({ isOpen, onSelectRequest }: Props) {
             <RequestCard
               key={req.id}
               request={req}
+              loadingId={loadingId}
               onViewRoute={onSelectRequest}
+              onAccept={() => onAcceptMission(req.id)}
+              onDecline={() => onDeclineMission(req.id)}
             />
           ))}
 
         {activeTab === "My Missions" && (
-          <p className="text-sm text-slate-400 text-center py-8">
-            1 active mission in progress.
-          </p>
+          <>
+            {activeMission ? (
+              <ActiveMissionStrip mission={activeMission} />
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-8">
+                No active missions.
+              </p>
+            )}
+          </>
         )}
       </div>
-
-      {/* Active mission strip — always visible */}
-      <ActiveMissionStrip mission={activeMission} />
     </aside>
   );
 }
