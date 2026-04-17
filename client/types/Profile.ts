@@ -165,7 +165,7 @@ export interface MissionSummary {
   pickup:       string;
   delivery:     string;
   scheduled_at: string;
-  earnings:     number;
+  earnings : number
 }
 
 // ─── Status badge styles ──────────────────────────────────────────────────────

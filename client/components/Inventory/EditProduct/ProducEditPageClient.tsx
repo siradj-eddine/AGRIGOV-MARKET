@@ -8,21 +8,16 @@ import MarketPricingCard from './Pricing';
 import { InventoryStatusCard, MarketExpertCard } from './InventoryStatusCard';
 import {
   PRODUCT_IMAGES,
-  MARKET_REFERENCE,
   INVENTORY_STATUSES,
   BREADCRUMBS,
 } from '@/types/ProductEdit';
-import type { ProductForm, ProductImage } from '@/types/ProductEdit';
-import { farmerProductApi, ApiError } from '@/lib/api';
+import type { ProductForm, ProductImage, ApiFieldErrors, MinistryProductOption } from '@/types/ProductEdit';
+import { farmerProductApi, ApiError, ministryProductApi } from '@/lib/api';
 
-// ─── skeleton ────────────────────────────────────────────────────────────────
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton({ className }: { className?: string }) {
-  return (
-    <div
-      className={`animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700 ${className ?? ''}`}
-    />
-  );
+  return <div className={`animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700 ${className ?? ''}`} />;
 }
 
 function PageSkeleton() {
@@ -53,24 +48,20 @@ function PageSkeleton() {
   );
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Map an API product to the local form state. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function apiToForm(data: any): ProductForm {
   return {
-    name:            data.title       ?? '',
-    varietyCode:     data.variety_code ?? '',
-    quantityTons:    Number(data.stock ?? 0),
-    moisturePercent: Number(data.moisture_percent ?? 0),
-    description:     data.description ?? '',
-    askingPrice:     Number(data.unit_price ?? 0),
-    minPrice:        Number(data.min_price ?? 0),
-    in_stock:        data.in_stock    ?? true,
+    ministry_product_id: data.ministry_product_id ?? data.ministry_product ?? "",
+    quantityKg:          Number(data.stock ?? 0),
+    description:         data.description ?? '',
+    askingPrice:         Number(data.unit_price ?? 0),
+    in_stock:            data.in_stock ?? true,
+    season:              data.season ?? 'summer',
   };
 }
 
-/** Map an API product's image list to ProductImage[]. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function apiToImages(data: any): ProductImage[] {
   const imgs = Array.isArray(data.images) ? data.images : [];
@@ -85,40 +76,41 @@ function apiToImages(data: any): ProductImage[] {
   );
 }
 
-/** Build description string bundling moisture % and variety code. */
-function buildDescription(form: ProductForm): string {
-  const lines: string[] = [];
-  if (form.description.trim())  lines.push(form.description.trim());
-  if (form.varietyCode.trim())  lines.push(`Variety Code: ${form.varietyCode.trim()}`);
-  if (form.moisturePercent)     lines.push(`Moisture: ${form.moisturePercent}%`);
-  return lines.join('\n');
-}
-
-// ─── component ───────────────────────────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProductEditPage() {
-  // ── route ──────────────────────────────────────────────────────────────────
   const params    = useParams();
   const router    = useRouter();
-  // Works for routes like /farmer/products/[id]/edit or /farmer/products/[productId]/edit
   const productId = (params?.id ?? params?.productId) as string | undefined;
 
-  // ── state ──────────────────────────────────────────────────────────────────
   const [form,        setForm]        = useState<ProductForm | null>(null);
   const [images,      setImages]      = useState<ProductImage[]>(PRODUCT_IMAGES);
   const [newImgFiles, setNewImgFiles] = useState<File[]>([]);
 
-  const [isLoading,   setIsLoading]   = useState(!!productId);
-  const [loadError,   setLoadError]   = useState<string | null>(null);
-  const [isSaving,    setIsSaving]    = useState(false);
-  const [saveError,   setSaveError]   = useState<string | null>(null);
-  const [showToast,   setShowToast]   = useState(false);
+  // Ministry products for dropdown
+  const [ministryProducts,  setMinistryProducts]  = useState<MinistryProductOption[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  const [isLoading,  setIsLoading]  = useState(!!productId);
+  const [loadError,  setLoadError]  = useState<string | null>(null);
+  const [isSaving,   setIsSaving]   = useState(false);
+  const [saveError,  setSaveError]  = useState<string | null>(null);   // generic
+  const [fieldErrors,setFieldErrors]= useState<ApiFieldErrors>({});   // field-level
+  const [showToast,  setShowToast]  = useState(false);
 
   const cancelledRef = useRef(false);
 
-  // ── fetch product ──────────────────────────────────────────────────────────
+  // ── Fetch ministry products ────────────────────────────────────────────────
   useEffect(() => {
-    if (!productId) return;        // no id in URL → new product / wrong route
+    ministryProductApi.list(1, 100)
+      .then((res) => setMinistryProducts(res.results))
+      .catch(() => {})
+      .finally(() => setIsLoadingProducts(false));
+  }, []);
+
+  // ── Fetch product ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!productId) return;
     cancelledRef.current = false;
     setIsLoading(true);
     setLoadError(null);
@@ -132,27 +124,29 @@ export default function ProductEditPage() {
       })
       .catch((err: unknown) => {
         if (cancelledRef.current) return;
-        setLoadError(
-          err instanceof ApiError ? err.message : 'Failed to load product. Please retry.',
-        );
+        setLoadError(err instanceof ApiError ? err.message : 'Failed to load product. Please retry.');
       })
-      .finally(() => {
-        if (!cancelledRef.current) setIsLoading(false);
-      });
+      .finally(() => { if (!cancelledRef.current) setIsLoading(false); });
 
     return () => { cancelledRef.current = true; };
   }, [productId]);
 
-  // ── handlers ───────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleChange = useCallback(
-    (field: keyof ProductForm, value: string | number | boolean) =>
-      setForm((prev) => prev ? { ...prev, [field]: value } : prev),
-    [],
-  );
-
-  const handlePriceChange = useCallback(
-    (field: 'askingPrice' | 'minPrice', value: number) =>
-      setForm((prev) => prev ? { ...prev, [field]: value } : prev),
+    (field: keyof ProductForm, value: string | number | boolean) => {
+      setForm((prev) => prev ? { ...prev, [field]: value } : prev);
+      // Clear field error on change
+      setFieldErrors((prev) => {
+        const apiField =
+          field === 'askingPrice'          ? 'unit_price'          :
+          field === 'quantityKg'           ? 'stock'               :
+          field === 'ministry_product_id'  ? 'ministry_product_id' : field;
+        if (!prev[apiField]) return prev;
+        const next = { ...prev };
+        delete next[apiField];
+        return next;
+      });
+    },
     [],
   );
 
@@ -166,7 +160,7 @@ export default function ProductEditPage() {
 
   function handleDiscard() {
     setNewImgFiles([]);
-    // Re-fetch to restore original state
+    setFieldErrors({});
     if (productId) {
       setIsLoading(true);
       farmerProductApi.detail(productId)
@@ -179,17 +173,20 @@ export default function ProductEditPage() {
   async function handleSave() {
     if (!form || !productId) return;
     setSaveError(null);
+    setFieldErrors({});
     setIsSaving(true);
 
     try {
       const fd = new FormData();
-      fd.append('title',       form.name.trim());
-      fd.append('description', buildDescription(form));
+      if (form.ministry_product_id !== "") {
+        fd.append('ministry_product_id', String(form.ministry_product_id));
+      }
+      fd.append('description', form.description);
       fd.append('unit_price',  String(form.askingPrice));
-      fd.append('stock',       String(form.quantityTons));
+      fd.append('stock',       String(form.quantityKg));
       fd.append('in_stock',    form.in_stock ? 'true' : 'false');
+      fd.append('season',      form.season);
 
-      // Only append newly uploaded files
       newImgFiles.forEach((file) => fd.append('images', file));
 
       await farmerProductApi.update(productId, fd);
@@ -198,40 +195,45 @@ export default function ProductEditPage() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (err) {
-      setSaveError(
-        err instanceof ApiError ? err.message : 'Failed to save changes. Please try again.',
-      );
+      if (err instanceof ApiError) {
+        try {
+          const body = JSON.parse(err.message);
+          if (typeof body === 'object' && body !== null) {
+            setFieldErrors(body as ApiFieldErrors);
+            return;
+          }
+        } catch {
+          // not JSON
+        }
+        setSaveError(err.message);
+      } else {
+        setSaveError('Failed to save changes. Please try again.');
+      }
     } finally {
       setIsSaving(false);
     }
   }
 
-  // ── render: loading ────────────────────────────────────────────────────────
+  // ── Render: loading ────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-
-        <main className="md:ml-64 pt-12 pb-12 px-4 md:px-12">
-          <div className="max-w-4xl mx-auto">
-            <PageSkeleton />
-          </div>
+        <main className="pb-12 px-4 pt-12">
+          <div className="max-w-4xl mx-auto"><PageSkeleton /></div>
         </main>
       </div>
     );
   }
 
-  // ── render: load error ─────────────────────────────────────────────────────
+  // ── Render: load error ─────────────────────────────────────────────────────
   if (loadError) {
     return (
       <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-        <main className="md:ml-64 pt-12 pb-12 px-4 md:px-12 flex items-center justify-center">
+        <main className="pb-12 px-4 pt-12 flex items-center justify-center">
           <div className="text-center space-y-4 max-w-sm">
             <span className="material-symbols-outlined text-5xl text-red-400">error</span>
             <p className="text-slate-700 dark:text-slate-300 font-medium">{loadError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2.5 rounded-xl bg-primary text-slate-900 font-bold"
-            >
+            <button onClick={() => window.location.reload()} className="px-6 py-2.5 rounded-xl bg-primary text-slate-900 font-bold">
               Retry
             </button>
           </div>
@@ -240,17 +242,17 @@ export default function ProductEditPage() {
     );
   }
 
-  // Use fetched form or fall back to blank
   const currentForm = form ?? {
-    name: '', varietyCode: '', quantityTons: 0, moisturePercent: 0,
-    description: '', askingPrice: 0, minPrice: 0, in_stock: true,
+    ministry_product_id: "", quantityKg: 0, description: "",
+    askingPrice: 0, in_stock: true, season: "summer",
   };
 
-  // ── render: main ───────────────────────────────────────────────────────────
+  const fieldErrorCount = Object.keys(fieldErrors).length;
+
+  // ── Render: main ───────────────────────────────────────────────────────────
   return (
     <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-
-      <main className=" pt-12 pb-12 px-4">
+      <main className="pt-12 pb-12 px-4">
         <div className="max-w-4xl mx-auto">
 
           {/* Page Header */}
@@ -268,10 +270,6 @@ export default function ProductEditPage() {
               </nav>
               <h1 className="text-4xl font-extrabold tracking-tight">Edit Product</h1>
               <p className="text-slate-500 mt-1">
-                Manage specifications for{' '}
-                <span className="font-semibold text-slate-700 dark:text-slate-300">
-                  {currentForm.name || 'this product'}
-                </span>{' '}
                 {productId && <span className="text-xs text-slate-400">#{productId}</span>}
               </p>
             </div>
@@ -290,55 +288,70 @@ export default function ProductEditPage() {
                 className="px-6 py-2.5 rounded-xl bg-primary text-slate-900 font-bold shadow-sm active:scale-95 transition-all hover:opacity-90 disabled:opacity-60 flex items-center gap-2"
               >
                 {isSaving && (
-                  <span className="material-symbols-outlined text-base animate-spin">
-                    progress_activity
-                  </span>
+                  <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
                 )}
                 Save Changes
               </button>
             </div>
           </div>
 
-          {/* Save error banner */}
+          {/* Generic save error */}
           {saveError && (
-            <div
-              role="alert"
-              className="mb-6 flex items-start gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-300"
-            >
+            <div role="alert" className="mb-6 flex items-start gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-300">
               <span className="material-symbols-outlined mt-0.5 shrink-0">error</span>
               <span className="flex-1">{saveError}</span>
-              <button
-                type="button"
-                onClick={() => setSaveError(null)}
-                className="shrink-0"
-                aria-label="Dismiss"
-              >
+              <button type="button" onClick={() => setSaveError(null)} className="shrink-0" aria-label="Dismiss">
                 <span className="material-symbols-outlined text-base">close</span>
               </button>
             </div>
           )}
 
+          {/* Field-error summary */}
+          {fieldErrorCount > 0 && (
+            <div role="alert" className="mb-6 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 px-4 py-3 text-sm text-orange-700 dark:text-orange-300">
+              <div className="flex items-center gap-2 font-semibold mb-2">
+                <span className="material-symbols-outlined text-base">warning</span>
+                Please fix {fieldErrorCount} field error{fieldErrorCount > 1 ? "s" : ""} below:
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                {Object.entries(fieldErrors).map(([field, msgs]) =>
+                  msgs.map((msg, i) => (
+                    <li key={`${field}-${i}`}>
+                      <span className="font-medium capitalize">{field.replace(/_/g, " ")}</span>: {msg}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          )}
+
           {/* Bento Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left column — media + specs */}
             <div className="lg:col-span-2 space-y-6">
               <ProductGalleryCard
                 images={images}
-                onEditPrimary={() => console.log('Edit primary image')}
+                onEditPrimary={() => {}}
                 onAddImage={handleAddImage}
               />
-              <CropSpecificationsCard form={currentForm} onChange={handleChange} />
+              <CropSpecificationsCard
+                form={currentForm}
+                onChange={handleChange}
+                ministryProducts={ministryProducts}
+                isLoadingProducts={isLoadingProducts}
+                fieldErrors={fieldErrors}
+              />
             </div>
 
-            {/* Right column — pricing + status */}
             <div className="space-y-6">
               <MarketPricingCard
                 form={currentForm}
-                marketRef={MARKET_REFERENCE}
-                onPriceChange={handlePriceChange}
+                onPriceChange={(field, value) =>
+                  handleChange(field === 'askingPrice' ? 'askingPrice' : 'askingPrice', value)
+                }
+                fieldErrors={fieldErrors}
               />
               <InventoryStatusCard statuses={INVENTORY_STATUSES} />
-              <MarketExpertCard onConnect={() => console.log('Connect to broker')} />
+              <MarketExpertCard onConnect={() => {}} />
             </div>
           </div>
         </div>
@@ -361,7 +374,7 @@ export default function ProductEditPage() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 z-50 animate-fade-in"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 z-50"
         >
           <span className="material-symbols-outlined text-primary">check_circle</span>
           <span className="font-bold text-sm">Product updated successfully</span>

@@ -13,6 +13,13 @@ import type {
 import { apiToRegionDetail } from "@/types/Regional";
 import { regionalApi, ApiError } from "@/lib/api";
 
+interface Props {
+  comparisons:    ApiRegionComparison[];
+  allStats:       AllRegionsStatsData | null;
+  activeRegionId: AlgeriaRegion | null;
+  isLoading:      boolean;
+  onSelect:       (id: AlgeriaRegion) => void;
+}
 export default function RegionalDataPage() {
   // ── data ───────────────────────────────────────────────────────────────────
   const [allStats,    setAllStats]    = useState<AllRegionsStatsData | null>(null);
@@ -69,11 +76,11 @@ export default function RegionalDataPage() {
   })();
 
   // ── handlers ──────────────────────────────────────────────────────────────
-  const handleRegionClick = (id: AlgeriaRegion) =>
-    setActiveRegionId((prev) => (prev === id ? null : id));
+  const handleRegionClick = (id: string) =>
+    setActiveRegionId((prev) => (prev === id ? null : (id as AlgeriaRegion)));
 
   const handleCardClose = () => setActiveRegionId(null);
-
+  
   // ── render ─────────────────────────────────────────────────────────────────
   return (
     <div className="bg-background-light text-slate-800 font-display antialiased h-screen flex flex-col overflow-hidden">
@@ -102,11 +109,11 @@ export default function RegionalDataPage() {
           onRegionClick={handleRegionClick}
           onCardClose={handleCardClose}
           activeDetail={activeDetail}
-          isLoading={isLoading}
         />
 
         <RegionalRankings
           comparisons={comparisons}
+          allStats={allStats}
           activeRegionId={activeRegionId}
           isLoading={isLoading}
           onSelect={handleRegionClick}

@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import type { ApiMission, MissionStatus, MissionFilterParams } from "@/types/Missions";
+import type {
+  ApiMission,
+  MissionStatus,
+  MissionFilterParams,
+} from "@/types/Missions";
 import {
   MISSION_STATUS_LABEL,
   MISSION_STATUS_BADGE,
@@ -135,7 +139,9 @@ function MissionCard({
 
         <div className="flex items-center gap-3">
           <div className="ml-2 w-px h-4 bg-primary/30" />
-          <p className="text-[10px] text-slate-400 italic">{mission.wilaya}, {mission.baladiya}</p>
+          <p className="text-[10px] text-slate-400 italic">
+            {mission.wilaya}, {mission.baladiya}
+          </p>
         </div>
 
         <div className="flex items-center gap-3 text-sm">
@@ -175,20 +181,26 @@ function MissionCard({
       {/* Meta row */}
       <div className="grid grid-cols-2 gap-3 text-[11px] text-slate-500 dark:text-slate-400 mb-5">
         <div>
-          <span className="font-bold uppercase tracking-wider block">Transporter</span>
+          <span className="font-bold uppercase tracking-wider block">
+            Transporter
+          </span>
           <span className="text-slate-700 dark:text-slate-300 font-medium">
             {mission.transporter ? `#${mission.transporter}` : "Not assigned"}
           </span>
         </div>
         <div>
-          <span className="font-bold uppercase tracking-wider block">Created</span>
+          <span className="font-bold uppercase tracking-wider block">
+            Created
+          </span>
           <span className="text-slate-700 dark:text-slate-300 font-medium">
             {formatMissionDate(mission.created_at)}
           </span>
         </div>
         {mission.notes && (
           <div className="col-span-2">
-            <span className="font-bold uppercase tracking-wider block">Notes</span>
+            <span className="font-bold uppercase tracking-wider block">
+              Notes
+            </span>
             <span className="text-slate-700 dark:text-slate-300 font-medium line-clamp-2">
               {mission.notes}
             </span>
@@ -196,8 +208,12 @@ function MissionCard({
         )}
         {mission.decline_count > 0 && (
           <div>
-            <span className="font-bold uppercase tracking-wider block">Declines</span>
-            <span className="text-orange-500 font-bold">{mission.decline_count}</span>
+            <span className="font-bold uppercase tracking-wider block">
+              Declines
+            </span>
+            <span className="text-orange-500 font-bold">
+              {mission.decline_count}
+            </span>
           </div>
         )}
       </div>
@@ -228,19 +244,19 @@ function MissionCard({
 
 export default function MissionsPage() {
   // ── data state ─────────────────────────────────────────────────────────────
-  const [missions,    setMissions]    = useState<ApiMission[]>([]);
-  const [totalCount,  setTotalCount]  = useState(0);
-  const [isLoading,   setIsLoading]   = useState(true);
-  const [loadError,   setLoadError]   = useState<string | null>(null);
+  const [missions, setMissions] = useState<ApiMission[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // ── filter state ───────────────────────────────────────────────────────────
-  const [search,      setSearch]      = useState("");
-  const [statusFilter,setStatusFilter]= useState<MissionStatus | "">("");
-  const [page,        setPage]        = useState(1);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<MissionStatus | "">("");
+  const [page, setPage] = useState(1);
 
   // ── action state ──────────────────────────────────────────────────────────
-  const [cancellingId,setCancellingId]= useState<number | null>(null);
-  const [toast,       setToast]       = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const cancelledRef = useRef(false);
 
@@ -270,25 +286,30 @@ export default function MissionsPage() {
         setLoadError(
           err instanceof ApiError
             ? err.message
-            : "Failed to load missions. Please retry."
+            : "Failed to load missions. Please retry.",
         );
       })
       .finally(() => {
         if (!cancelledRef.current) setIsLoading(false);
       });
 
-    return () => { cancelledRef.current = true; };
+    return () => {
+      cancelledRef.current = true;
+    };
   }, [page, statusFilter, search]);
 
   useEffect(fetchMissions, [fetchMissions]);
 
   // ── derived stats ──────────────────────────────────────────────────────────
-  const activeMissions  = missions.filter(
-    (m) => m.status === "accepted" || m.status === "in_transit" || m.status === "picked_up"
+  const activeMissions = missions.filter(
+    (m) =>
+      m.status === "accepted" ||
+      m.status === "in_transit" ||
+      m.status === "picked_up",
   ).length;
   const pendingMissions = missions.filter((m) => m.status === "pending").length;
-  const delivered       = missions.filter((m) => m.status === "delivered").length;
-  const cancelled       = missions.filter((m) => m.status === "cancelled").length;
+  const delivered = missions.filter((m) => m.status === "delivered").length;
+  const cancelled = missions.filter((m) => m.status === "cancelled").length;
 
   // ── cancel ─────────────────────────────────────────────────────────────────
   const handleCancel = useCallback(async (id: number) => {
@@ -296,13 +317,13 @@ export default function MissionsPage() {
     try {
       await farmerMissionApi.cancel(id);
       setMissions((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, status: "cancelled" } : m))
+        prev.map((m) => (m.id === id ? { ...m, status: "cancelled" } : m)),
       );
       showToast("Mission cancelled successfully.");
     } catch (err) {
       showToast(
         err instanceof ApiError ? err.message : "Failed to cancel mission.",
-        true
+        true,
       );
     } finally {
       setCancellingId(null);
@@ -316,12 +337,55 @@ export default function MissionsPage() {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
+  function exportMissionsCSV(missions: ApiMission[]) {
+    const header = [
+      "Mission ID",
+      "Order ID",
+      "Status",
+      "Pickup Address",
+      "Delivery Address",
+      "Wilaya",
+      "Baladiya",
+      "Transporter",
+      "Declines",
+      "Created At",
+      "Notes",
+    ].join(",");
+
+    const rows = missions.map((m) =>
+      [
+        m.id,
+        m.order,
+        m.status,
+        `"${m.pickup_address}"`,
+        `"${m.delivery_address}"`,
+        `"${m.wilaya}"`,
+        `"${m.baladiya}"`,
+        m.transporter ?? "Not assigned",
+        m.decline_count ?? 0,
+        formatMissionDate(m.created_at),
+        `"${m.notes ?? ""}"`,
+      ].join(","),
+    );
+
+    const csv = [header, ...rows].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `missions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
   // ── render ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto p-6 lg:p-10">
-
           {/* ── Hero header ── */}
           <div className="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-earth-800 text-white p-8 lg:p-10 mb-10 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
             {/* Decorative bg circle */}
@@ -334,10 +398,13 @@ export default function MissionsPage() {
                 Live Mission Tracking
               </span>
               <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight mb-3">
-                Transportation<br />Mission Control
+                Transportation
+                <br />
+                Mission Control
               </h1>
               <p className="text-slate-400 max-w-md text-sm leading-relaxed">
-                Monitor every harvest shipment from your farm to the final delivery point.
+                Monitor every harvest shipment from your farm to the final
+                delivery point.
               </p>
             </div>
 
@@ -352,10 +419,26 @@ export default function MissionsPage() {
 
           {/* ── Stats row ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatPill label="Active"    value={activeMissions}  accent="border-primary"      />
-            <StatPill label="Pending"   value={pendingMissions} accent="border-yellow-400"   />
-            <StatPill label="Delivered" value={delivered}       accent="border-green-500"    />
-            <StatPill label="Cancelled" value={cancelled}       accent="border-red-400"      />
+            <StatPill
+              label="Active"
+              value={activeMissions}
+              accent="border-primary"
+            />
+            <StatPill
+              label="Pending"
+              value={pendingMissions}
+              accent="border-yellow-400"
+            />
+            <StatPill
+              label="Delivered"
+              value={delivered}
+              accent="border-green-500"
+            />
+            <StatPill
+              label="Cancelled"
+              value={cancelled}
+              accent="border-red-400"
+            />
           </div>
 
           {/* ── Filters ── */}
@@ -372,7 +455,10 @@ export default function MissionsPage() {
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                   placeholder="Order ID, address, notes…"
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-earth-800 border border-neutral-200 dark:border-border-dark text-sm outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
@@ -402,7 +488,11 @@ export default function MissionsPage() {
 
             <button
               type="button"
-              onClick={() => { setSearch(""); setStatusFilter(""); setPage(1); }}
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("");
+                setPage(1);
+              }}
               className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-border-dark text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-earth-800 transition-colors whitespace-nowrap"
             >
               Clear
@@ -415,10 +505,15 @@ export default function MissionsPage() {
               role="alert"
               className="mb-6 flex items-start gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-300"
             >
-              <span className="material-symbols-outlined mt-0.5 shrink-0">error</span>
+              <span className="material-symbols-outlined mt-0.5 shrink-0">
+                error
+              </span>
               <span className="flex-1">{loadError}</span>
               <button
-                onClick={() => { setLoadError(null); fetchMissions(); }}
+                onClick={() => {
+                  setLoadError(null);
+                  fetchMissions();
+                }}
                 className="shrink-0 underline font-semibold text-xs"
               >
                 Retry
@@ -428,10 +523,27 @@ export default function MissionsPage() {
 
           {/* ── Missions grid ── */}
           <div className="mb-4 flex items-center justify-between px-1">
-            <h2 className="text-xl font-extrabold tracking-tight">Active Deployments</h2>
-            <span className="text-sm text-slate-500">
-              {totalCount} mission{totalCount !== 1 ? "s" : ""}
-            </span>
+            <h2 className="text-xl font-extrabold tracking-tight">
+              Active Deployments
+            </h2>
+
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-500">
+                {totalCount} mission{totalCount !== 1 ? "s" : ""}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => exportMissionsCSV(missions)}
+                disabled={missions.length === 0}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-dark text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-neutral-50 dark:hover:bg-earth-800 transition-colors disabled:opacity-40"
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  download
+                </span>
+                Export Data
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -445,12 +557,16 @@ export default function MissionsPage() {
               <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">
                 local_shipping
               </span>
-              <p className="text-slate-500 font-medium mb-4">No missions found.</p>
+              <p className="text-slate-500 font-medium mb-4">
+                No missions found.
+              </p>
               <Link
                 href="/farmer/dashboard/missions/add"
                 className="flex items-center gap-2 bg-primary text-slate-900 px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all"
               >
-                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span className="material-symbols-outlined text-[18px]">
+                  add
+                </span>
                 Create Your First Mission
               </Link>
             </div>
@@ -502,7 +618,9 @@ export default function MissionsPage() {
           aria-live="polite"
           className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 z-50 animate-fade-in"
         >
-          <span className="material-symbols-outlined text-primary text-base">check_circle</span>
+          <span className="material-symbols-outlined text-primary text-base">
+            check_circle
+          </span>
           <span className="font-medium text-sm">{toast}</span>
         </div>
       )}

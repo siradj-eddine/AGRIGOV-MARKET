@@ -51,6 +51,7 @@ export const adminNavItems: AdminNavItem[] = [
   { icon: "trending_up", label: "Official Prices", href: "/Ministry/dashboard/PricesManagement" },
   {icon: "category", label: "Categories", href: "/Ministry/dashboard/categories" },
   { icon: "people_alt", label: "Users Management", href: "/Ministry/dashboard/users" },
+  
   {icon: "bar_chart", label: "Analytics", href: "/Ministry/dashboard/analytics" },
 ];
 

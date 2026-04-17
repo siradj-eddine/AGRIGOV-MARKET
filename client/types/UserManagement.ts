@@ -35,6 +35,49 @@ export interface ApiDashboardOverview {
 }
 
 export interface ApiDashboardResponse {
+  role: string;
+  data: {
+    overview: ApiDashboardOverview;
+    recent_activity: {
+      recent_users: ApiRecentUser[];
+    };
+  };
+}
+
+export interface ApiRevenueTrendPoint {
+  month: string;
+  total: number;
+}
+
+export interface ApiRegionPerformance {
+  farm__wilaya: string;
+  total: number;
+}
+
+export interface ApiUserDistribution {
+  role: ApiUserRole;
+  count: number;
+}
+
+export interface ApiDashboardCharts {
+  revenue_trend: ApiRevenueTrendPoint[];
+  region_performance: ApiRegionPerformance[];
+  user_distribution: ApiUserDistribution[];
+}
+
+export interface ApiTopProduct {
+  id: number;
+  ministry_product__name: string;
+  total_sold: number | null; // 🔥 FIX
+}
+
+export interface ApiDashboardInsights {
+  top_products: ApiTopProduct[];
+  low_stock_products: number;
+}
+
+
+export interface ApiDashboardResponse {
   overview: ApiDashboardOverview;
 }
 

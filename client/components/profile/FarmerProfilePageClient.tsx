@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import PersonalDetailsCard from "./PersonalDetailsCard";
-import AccountSecurityCard from "./AccountSecurityCard";
 import ProfileCompletion   from "./ProfileCompletion";
 import { profileApi, ApiError } from "@/lib/api";
 import type {
@@ -111,17 +110,35 @@ function DocumentsCard({ profile }: { profile: FarmerProfile }) {
       {docs.map((doc) => (
         <div key={doc.key}>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{doc.label}</p>
-          {doc.url ? (
-            <div className="relative h-28 w-full rounded-xl overflow-hidden border border-neutral-100 bg-slate-50">
-              <Image src={doc.url} alt={doc.label} fill className="object-cover" sizes="(max-width: 768px) 100vw, 25vw" />
-              <div className="absolute top-2 right-2">
-                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                  <span className="material-symbols-outlined" style={{ fontSize: "10px", fontVariationSettings: "'FILL' 1" }}>check</span>
-                  Uploaded
-                </span>
-              </div>
-            </div>
-          ) : (
+{doc.url ? (
+  <a href={doc.url} target="_blank" rel="noopener noreferrer">
+    <div className="relative h-40 w-full rounded-xl overflow-hidden border border-neutral-100 bg-slate-50 cursor-pointer hover:opacity-90 transition">
+      <Image
+        src={doc.url}
+        alt={doc.label}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 100vw, 25vw"
+      />
+
+      <div className="absolute top-2 right-2">
+        <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
+          <span className="material-symbols-outlined" style={{ fontSize: "10px", fontVariationSettings: "'FILL' 1" }}>
+            check
+          </span>
+          Uploaded
+        </span>
+      </div>
+
+      {/* 👇 Optional overlay hint */}
+      <div className="absolute inset-0 bg-black/0 hover:bg-black/20 flex items-center justify-center transition">
+        <span className="text-white text-xs opacity-0 hover:opacity-100">
+          View full image
+        </span>
+      </div>
+    </div>
+  </a>
+) : (
             <div className="h-28 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 gap-1">
               <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 0" }}>upload_file</span>
               <p className="text-xs font-medium">Not uploaded yet</p>
@@ -178,27 +195,6 @@ export default function FarmerProfilePage() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setError("");
-    try {
-      // User fields (JSON)
-      await profileApi.updateUser(userForm);
-      // Profile fields — use FormData so image fields work if ever swapped out
-      const fd = new FormData();
-      (Object.entries(profile) as [keyof FarmerProfile, unknown][]).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && typeof v !== "object") fd.append(k, String(v));
-      });
-      await profileApi.updateProfile(fd);
-      setToast("Profile saved successfully.");
-      setTimeout(() => setToast(""), 3000);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save profile.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const completionItems = [
     { label: "Email",       done: !!userForm.email          },
     { label: "Phone",       done: !!userForm.phone          },
@@ -238,22 +234,6 @@ export default function FarmerProfilePage() {
                 </p>
               )}
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => user && setUserForm({ email: user.email, username: user.username, phone: user.phone })}
-                className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-full hover:bg-slate-200 transition-colors text-sm"
-              >
-                Discard
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-7 py-2.5 bg-primary text-black font-bold rounded-full hover:opacity-90 active:scale-95 disabled:opacity-60 flex items-center gap-2 text-sm"
-              >
-                {isSaving && <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>}
-                Save Profile
-              </button>
-            </div>
           </div>
 
           {/* Banners */}
@@ -283,10 +263,6 @@ export default function FarmerProfilePage() {
               <FarmDetailsCard
                 profile={profile}
                 onChange={(k, v) => setProfile((p) => ({ ...p, [k]: v }))}
-              />
-              <AccountSecurityCard
-                settings={security}
-                onToggle={(id) => setSecurity((p) => p.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s))}
               />
             </div>
           )}

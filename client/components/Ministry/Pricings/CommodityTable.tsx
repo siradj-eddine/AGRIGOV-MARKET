@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { ApiOfficialPrice } from "@/types/Prices";
 import {
   formatPriceRange,
@@ -9,21 +9,21 @@ import {
 } from "@/types/Prices";
 
 interface Props {
-  items:      ApiOfficialPrice[];
-  totalCount: number;
-  page:       number;
-  pageSize:   number;
-  isLoading:  boolean;
-  onEdit:     (item: ApiOfficialPrice) => void;
-  onDelete:   (id: number) => void;
+  items:        ApiOfficialPrice[];
+  totalCount:   number;
+  page:         number;
+  pageSize:     number;
+  isLoading:    boolean;
+  onEdit:       (item: ApiOfficialPrice) => void;
+  onDelete:     (id: number) => void;
   onPageChange: (page: number) => void;
-  editingId:  number | null;
+  editingId:    number | null;
 }
 
 function SkeletonRow() {
   return (
     <tr className="animate-pulse">
-      {[1,2,3,4,5,6].map((i) => (
+      {[1, 2, 3, 4, 5, 6].map((i) => (
         <td key={i} className="px-6 py-4">
           <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
           {i === 1 && <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded w-1/2 mt-1.5" />}
@@ -33,11 +33,61 @@ function SkeletonRow() {
   );
 }
 
+// ── CSV helpers ────────────────────────────────────────────────────────────────
+
+function escapeCsv(value: string | number | boolean | null | undefined): string {
+  const str = String(value ?? "");
+  // Wrap in quotes if it contains comma, newline, or quote
+  if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function buildCsvRows(items: ApiOfficialPrice[]): string {
+  const headers = [
+    "ID", "Product", "Category", "Region", "Wilaya",
+    "Unit", "Min Price (DZD)", "Max Price (DZD)",
+    "Valid From", "Valid Until", "Status",
+  ];
+
+  const rows = items.map((item) => [
+    item.id,
+    item.product_detail.name,
+    item.product_detail.category_name ?? "",
+    item.region_name || "National",
+    item.wilaya || "",
+    item.unit,
+    item.min_price,
+    item.max_price,
+    formatOfficialPriceDate(item.valid_from),
+    item.valid_until ? formatOfficialPriceDate(item.valid_until) : "",
+    item.is_active ? "Active" : "Inactive",
+  ]);
+
+  return [headers, ...rows]
+    .map((row) => row.map(escapeCsv).join(","))
+    .join("\n");
+}
+
+function downloadCsv(csv: string, filename: string) {
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }); // BOM for Excel
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
 export default function CommodityTable({
   items, totalCount, page, pageSize, isLoading,
   onEdit, onDelete, onPageChange, editingId,
 }: Props) {
-  const [search, setSearch] = useState("");
+  const [search,      setSearch]      = useState("");
+  const [isExporting, setIsExporting] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -50,6 +100,19 @@ export default function CommodityTable({
         item.unit.toLowerCase().includes(q)
     );
   }, [items, search]);
+
+  const handleExport = useCallback(() => {
+    if (filtered.length === 0) return;
+    setIsExporting(true);
+    try {
+      const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const csv  = buildCsvRows(filtered);
+      downloadCsv(csv, `official-prices-${date}.csv`);
+    } finally {
+      // Small delay so the icon flash is visible
+      setTimeout(() => setIsExporting(false), 600);
+    }
+  }, [filtered]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const start      = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -74,12 +137,26 @@ export default function CommodityTable({
 
         <button
           type="button"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-bold rounded-lg shadow-sm text-slate-900 bg-primary hover:opacity-90 transition-colors whitespace-nowrap"
+          onClick={handleExport}
+          disabled={isExporting || filtered.length === 0}
+          title={filtered.length === 0 ? "No data to export" : `Export ${filtered.length} rows to CSV`}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-bold rounded-lg shadow-sm text-slate-900 bg-primary hover:opacity-90 transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
         >
-          <span className="material-icons text-lg mr-1">file_download</span>
-          Export
+          {isExporting ? (
+            <span className="material-icons text-lg mr-1 animate-spin">progress_activity</span>
+          ) : (
+            <span className="material-icons text-lg mr-1">file_download</span>
+          )}
+          {isExporting ? "Exporting…" : "Export CSV"}
         </button>
       </div>
+
+      {/* Export row count hint */}
+      {search && filtered.length > 0 && (
+        <p className="text-xs text-slate-500 dark:text-slate-400 px-1">
+          {filtered.length} filtered row{filtered.length !== 1 ? "s" : ""} will be exported.
+        </p>
+      )}
 
       {/* Table */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-neutral-light dark:border-border-dark shadow-sm overflow-hidden flex flex-col">
@@ -134,17 +211,11 @@ export default function CommodityTable({
 
                       {/* Region / Wilaya */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${regionBadgeClass(
-                            item.region_name
-                          )}`}
-                        >
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${regionBadgeClass(item.region_name)}`}>
                           {item.region_name || "National"}
                         </span>
                         {item.wilaya && (
-                          <div className="text-xs text-slate-400 mt-0.5 capitalize">
-                            {item.wilaya}
-                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5 capitalize">{item.wilaya}</div>
                         )}
                       </td>
 
@@ -162,15 +233,13 @@ export default function CommodityTable({
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
                         <span className="block">{formatOfficialPriceDate(item.valid_from)}</span>
                         {item.valid_until ? (
-                          <span className="block text-slate-400">
-                            → {formatOfficialPriceDate(item.valid_until)}
-                          </span>
+                          <span className="block text-slate-400">→ {formatOfficialPriceDate(item.valid_until)}</span>
                         ) : (
                           <span className="block text-slate-300 italic">No expiry</span>
                         )}
                       </td>
 
-                      {/* Active badge */}
+                      {/* Status */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {item.is_active ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-light dark:bg-primary/20 text-primary-dark text-[11px] font-bold">

@@ -25,23 +25,37 @@ def get_active_price(ministry_product_id: int, wilaya: str = ""):
         valid_from__lte=now,
     ).filter(
         Q(valid_until__isnull=True) | Q(valid_until__gte=now)
-    )
+    ).order_by("-valid_from") 
+
+def get_active_price(ministry_product_id: int, wilaya: str = ""):
+    now = timezone.now()
 
     if wilaya:
-        # 1. Exact wilaya match (case-insensitive)
+        wilaya = normalize_name(wilaya)
+
+    base_qs = OfficialPrice.objects.filter(
+        product_id=ministry_product_id,
+        valid_from__lte=now,
+    ).filter(
+        Q(valid_until__isnull=True) | Q(valid_until__gte=now)
+    ).order_by("-valid_from")
+
+    if wilaya:
         exact = base_qs.filter(wilaya__iexact=wilaya).first()
         if exact:
             return exact
 
-        # 2. Broad region match
         region_name = get_region_from_wilaya(wilaya)
         if region_name:
-            regional = base_qs.filter(region__iexact=region_name, wilaya="").first()
+            regional = base_qs.filter(region__iexact=region_name).first()
             if regional:
                 return regional
 
-    # 3. National fallback
-    return base_qs.filter(wilaya="", region="").first()
+    national = base_qs.filter(wilaya="", region="").first()
+    if national:
+        return national
+
+    return base_qs.first()
 
 
 def validate_price(ministry_product_id: int, price, wilaya: str = ""):

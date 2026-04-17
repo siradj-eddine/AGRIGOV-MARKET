@@ -68,7 +68,10 @@ function BarChart({
   return (
     <div className="flex items-end gap-1" style={{ height }}>
       {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center group/bar relative">
+        <div
+  key={i}
+  className="flex-1 flex flex-col justify-end items-center h-full group/bar relative"
+>
           <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
             {fmt(d.value)}
           </div>
@@ -214,7 +217,7 @@ const [mounted, setMounted] = useState(false);
   const ordersBars = useMemo(() =>
     (charts?.orders_over_time ?? []).slice(-10).map(d => ({
       label: shortMonthDay(d.day),
-      value: d.count,
+      value: d.count,      
     })), [charts]);
 
   const catSegments = useMemo(() =>
@@ -235,6 +238,11 @@ const [mounted, setMounted] = useState(false);
   const revenueGrowth = ov?.revenue_growth ?? 0;
 
   // ── Render ──────────────────────────────────────────────────────────────────
+  console.log(charts?.orders_over_time.slice(-10).map(d => ({
+      label: shortMonthDay(d.day),
+      value: d.count,      
+    })));
+  
 
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">

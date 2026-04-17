@@ -45,7 +45,6 @@ export default function YieldSidebar({ stats, isLoading }: Props) {
 
   const fmtRevenue = (n: number) =>
     n.toLocaleString("fr-DZ", { maximumFractionDigits: 0 });
-
   return (
     <aside className="w-80 bg-white border-r border-neutral-light flex flex-col z-10 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
       <div className="p-6">

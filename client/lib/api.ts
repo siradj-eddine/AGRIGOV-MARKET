@@ -54,7 +54,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     },
   });
 
-  const json = await res.json().catch(() => ({}));
+  const json = await res.json().catch((err) => (console.log(err)));
   if (!res.ok) {
     throw new ApiError(res.status, json?.message ?? json?.detail ?? "Something went wrong.");
   }
@@ -95,7 +95,7 @@ export const productApi = {
 export const farmerProductApi = {
   detail: (id: string | number) => apiFetch<ApiProduct>(`/api/products/${id}/`),
   create: (data: FormData) => apiFetch<ApiProduct>("/api/products/create/", { method: "POST", body: data }),
-  update: (id: string | number, data: FormData) => apiFetch<ApiProduct>(`/api/products/${id}/`, { method: "PATCH", body: data }),
+  update: (id: string | number, data: FormData) => apiFetch<ApiProduct>(`/api/products/${id}/update/`, { method: "PATCH", body: data }),
 };
 
 
@@ -253,26 +253,6 @@ export const profileApi = {
       method: "PATCH",
       body:   JSON.stringify(body),
     }),
- 
-  /**
-   * PATCH /api/users/me with FormData — used when updating profile fields
-   * that include file uploads (farmer card, national ID, etc.).
-   */
-  updateProfile: (formData: FormData) =>
-    apiFetch<MeResponse>("/api/users/me/", {
-      method: "PATCH",
-      body:   formData,
-    }),
- 
-  /**
-   * POST /api/users/change-password/
-   */
-  changePassword: (body: ChangePasswordFields) =>
-    apiFetch<{ message: string }>("/api/users/change-password/", {
-      method: "POST",
-      body:   JSON.stringify(body),
-    }),
- 
   // ── Activity (buyer) ──────────────────────────────────────────────────────
  
   myOrders: () =>
@@ -634,4 +614,45 @@ export const notificationApi = {
 
   markAllAsRead: () =>
     apiFetch<{ status: string }>('/api/notifications/read-all/', { method: 'PATCH' }),
+import type { MinistryProductsResponse, MinistryProduct, MinistryProductPayload } from "@/types/MinistryProduct";
+export const ministryProductApi = {
+  /**
+   * GET /api/products/ministry/
+   * Paginated list of all ministry-managed products.
+   */
+  list: (page = 1, pageSize = 10, search?: string) => {
+    const p = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+    if (search?.trim()) p.set("search", search.trim());
+    return apiFetch<MinistryProductsResponse>(`/api/products/ministry/?${p.toString()}`);
+  },
+ 
+  /**
+   * GET /api/products/ministry/:id/
+   */
+  detail: (id: number) =>
+    apiFetch<MinistryProduct>(`/api/products/ministry/${id}/`),
+ 
+  /**
+   * POST /api/products/ministry/create/
+   */
+  create: (payload: MinistryProductPayload) =>
+    apiFetch<MinistryProduct>("/api/products/ministry/create/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+ 
+  /**
+   * PUT /api/products/ministry/:id/update/
+   */
+  update: (id: number, payload: MinistryProductPayload) =>
+    apiFetch<MinistryProduct>(`/api/products/ministry/${id}/update/`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+ 
+  /**
+   * DELETE /api/products/ministry/:id/delete/
+   */
+  delete: (id: number) =>
+    apiFetch<void>(`/api/products/ministry/${id}/delete/`, { method: "DELETE" }),
 };

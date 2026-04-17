@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import PersonalDetailsCard from "./PersonalDetailsCard";
-import AccountSecurityCard from "./AccountSecurityCard";
 import ProfileCompletion   from "./ProfileCompletion";
-import { profileApi, ApiError } from "@/lib/api";
+import { profileApi, transporterApi , ApiError } from "@/lib/api";
 import type {
   ApiUser,
   TransporterProfile,
@@ -15,6 +14,7 @@ import type {
   MissionSummary,
 } from "@/types/Profile";
 import { DEFAULT_SECURITY_SETTINGS, MISSION_STATUS_STYLES } from "@/types/Profile";
+import { MissionsApiResponse } from "@/types/Missions";
 
 // ── Document images card ──────────────────────────────────────────────────────
 
@@ -33,17 +33,35 @@ function LicenseDocumentsCard({ profile }: { profile: TransporterProfile }) {
       {docs.map((doc) => (
         <div key={doc.key}>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{doc.label}</p>
-          {doc.url ? (
-            <div className="relative h-28 w-full rounded-xl overflow-hidden border border-neutral-100 bg-slate-50">
-              <Image src={doc.url} alt={doc.label} fill className="object-cover" sizes="(max-width: 768px) 100vw, 25vw" />
-              <div className="absolute top-2 right-2">
-                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                  <span className="material-symbols-outlined" style={{ fontSize: "10px", fontVariationSettings: "'FILL' 1" }}>check</span>
-                  Uploaded
-                </span>
-              </div>
-            </div>
-          ) : (
+{doc.url ? (
+  <a href={doc.url} target="_blank" rel="noopener noreferrer">
+    <div className="relative h-40 w-full rounded-xl overflow-hidden border border-neutral-100 bg-slate-50 cursor-pointer hover:opacity-90 transition">
+      <Image
+        src={doc.url}
+        alt={doc.label}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 100vw, 25vw"
+      />
+
+      <div className="absolute top-2 right-2">
+        <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
+          <span className="material-symbols-outlined" style={{ fontSize: "10px", fontVariationSettings: "'FILL' 1" }}>
+            check
+          </span>
+          Uploaded
+        </span>
+      </div>
+
+      {/* 👇 Optional overlay hint */}
+      <div className="absolute inset-0 bg-black/0 hover:bg-black/20 flex items-center justify-center transition">
+        <span className="text-white text-xs opacity-0 hover:opacity-100">
+          View full image
+        </span>
+      </div>
+    </div>
+  </a>
+) : (
             <div className="h-28 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 gap-1">
               <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 0" }}>upload_file</span>
               <p className="text-xs font-medium">Not uploaded yet</p>
@@ -119,46 +137,68 @@ export default function TransporterProfilePage() {
   const [extras,     setExtras]    = useState<TransporterExtras>({ vehicles_count: 0 });
   const [userForm,   setUserForm]  = useState<EditableUserFields>({ email: "", username: "", phone: "" });
   const [missions,   setMissions]  = useState<MissionSummary[]>([]);
-  const [security,   setSecurity]  = useState<SecuritySetting[]>(DEFAULT_SECURITY_SETTINGS);
   const [isLoading,  setIsLoading] = useState(true);
   const [msnLoading, setMsnLoading] = useState(true);
   const [isSaving,   setIsSaving]  = useState(false);
   const [error,      setError]     = useState("");
   const [toast,      setToast]     = useState("");
 
-  useEffect(() => {
-    profileApi.me()
-      .then((res) => {
-        const { user: u, profile: p, extras: e } = (res as any).data;
-        setUser(u);
-        setUserForm({ email: u.email, username: u.username, phone: u.phone });
-        setProfile(p);
-        setExtras(e);
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load profile."))
-      .finally(() => setIsLoading(false));
 
-    profileApi.myMissions().catch(() => ({ results: [] }))
-      .then((res) => setMissions(res.results))
-      .finally(() => setMsnLoading(false));
-  }, []);
+function mapMissionStatus(
+  status: import("@/types/Missions").MissionStatus
+): import("@/types/Profile").MissionStatus {
+  switch (status) {
+    case "pending":
+    case "accepted":
+      return "assigned";
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setError("");
-    try {
-      await profileApi.updateUser(userForm);
-      const fd = new FormData();
-      if (profile.age !== null) fd.append("age", String(profile.age));
-      await profileApi.updateProfile(fd);
-      setToast("Profile saved.");
-      setTimeout(() => setToast(""), 3000);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    case "picked_up":
+    case "in_transit":
+      return "in_progress";
+
+    case "delivered":
+      return "completed";
+
+    case "cancelled":
+      return "cancelled";
+
+    default:
+      return "assigned";
+  }
+}
+
+useEffect(() => {
+  profileApi.me()
+    .then((res) => {
+      const { user: u, profile: p, extras: e } = (res as any).data;
+      setUser(u);
+      setUserForm({ email: u.email, username: u.username, phone: u.phone });
+      setProfile(p);
+      setExtras(e);
+    })
+    .catch((err) =>
+      setError(err instanceof ApiError ? err.message : "Failed to load profile.")
+    )
+    .finally(() => setIsLoading(false));
+
+  transporterApi.getMyMissions()
+    .then((res: MissionsApiResponse) => {
+      const normalized: MissionSummary[] = res.results.map((m) => ({
+        id: m.id,
+        order_number: `Order #${m.order}`,
+        pickup: m.pickup_address,
+        delivery: m.delivery_address,
+        scheduled_at: m.created_at, 
+        status: mapMissionStatus(m.status),
+        earnings: m.order_total_price ?? 0,
+      }));
+
+      setMissions(normalized);
+    })
+    .catch(() => setMissions([]))
+    .finally(() => setMsnLoading(false));
+}, []);
+
 
   const completedMissions = missions.filter((m) => m.status === "completed").length;
   const totalEarnings     = missions.filter((m) => m.status === "completed").reduce((s, m) => s + m.earnings, 0);
@@ -180,8 +220,11 @@ export default function TransporterProfilePage() {
     </div>
   );
 
+  console.log(missions);
+  
+
   return (
-    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+    <div className="font-display xl:ml-64 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
       <main className="px-4 sm:px-6 py-8 pb-24 md:pb-12">
         <div className="max-w-6xl mx-auto space-y-6">
 
@@ -192,17 +235,6 @@ export default function TransporterProfilePage() {
               <p className="text-sm text-slate-500 mt-1">
                 {extras.vehicles_count} vehicle{extras.vehicles_count !== 1 ? "s" : ""} registered
               </p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => user && setUserForm({ email: user.email, username: user.username, phone: user.phone })}
-                className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 font-semibold rounded-full hover:bg-slate-200 transition-colors text-sm">
-                Discard
-              </button>
-              <button onClick={handleSave} disabled={isSaving}
-                className="px-7 py-2.5 bg-primary text-black font-bold rounded-full hover:opacity-90 active:scale-95 disabled:opacity-60 flex items-center gap-2 text-sm">
-                {isSaving && <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>}
-                Save Profile
-              </button>
             </div>
           </div>
 
@@ -251,12 +283,6 @@ export default function TransporterProfilePage() {
                 </h3>
                 <MyMissions missions={missions} isLoading={msnLoading} />
               </section>
-
-              {/* Security */}
-              <AccountSecurityCard
-                settings={security}
-                onToggle={(id) => setSecurity((p) => p.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s))}
-              />
             </div>
           )}
 

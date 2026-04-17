@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import type { ApiDashboardResponse } from "@/types/UserManagement";
 import type { RegionComparisonResponse } from "@/types/Regional";
-import { ministryApi, regionalApi, ApiError } from "@/lib/api";
+import { ministryApi, regionalApi, ApiError, productApi } from "@/lib/api";
+import { apiRoleToDisplay } from "@/types/UserManagement";
+import { ApiProduct } from "@/types/Product";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -202,73 +204,178 @@ function LineSparkline({ data, color = "#0df20d", label }: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function MinistryAnalyticsPage() {
-  const [dashboard,    setDashboard]    = useState<ApiDashboardResponse | null>(null);
-  const [regionComp,   setRegionComp]   = useState<RegionComparisonResponse | null>(null);
-  const [isLoading,    setIsLoading]    = useState(true);
-  const [loadError,    setLoadError]    = useState<string | null>(null);
+  const [dashboard, setDashboard] = useState<ApiDashboardResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [topProducts, setTopProducts] = useState<ApiProduct[]>([]);
   const cancelledRef = useRef(false);
 
+function exportAnalyticsCSV() {
+  if (!dashboard) {
+    alert("No data to export");
+    return;
+  }
+
+  const rows: string[] = [];
+  const ov = dashboard.overview;
+  const charts = dashboard.charts;
+
+  // ── HEADER ──
+  rows.push("MINISTRY PLATFORM ANALYTICS REPORT");
+  rows.push(`Generated At,${new Date().toLocaleString()}`);
+  rows.push("");
+
+  // ── OVERVIEW ──
+  rows.push("=== OVERVIEW ===");
+  rows.push(`Total Revenue,${ov.total_revenue}`);
+  rows.push(`Monthly Revenue,${ov.monthly_revenue}`);
+  rows.push(`Total Orders,${ov.total_orders}`);
+  rows.push("");
+
+  // ── REVENUE TREND ──
+  rows.push("=== REVENUE TREND ===");
+  (charts?.revenue_trend ?? []).forEach(d => {
+    rows.push(`${d.month},${d.total}`);
+  });
+  rows.push("");
+
+  // ── USER DISTRIBUTION ──
+  rows.push("=== USER DISTRIBUTION ===");
+  (charts?.user_distribution ?? []).forEach(d => {
+    rows.push(`${d.role},${d.count}`);
+  });
+  rows.push("");
+
+  // ── REGION PERFORMANCE ──
+  rows.push("=== REGION PERFORMANCE ===");
+  (charts?.region_performance ?? []).forEach(r => {
+    rows.push(
+      `${r.farm__wilaya},${r.total}`
+    );
+  });
+  rows.push("");
+
+  // ── TOP PRODUCTS ──
+  rows.push("=== TOP PRODUCTS ===");
+  topProducts.forEach(p => {
+    rows.push(
+      `${p.ministry_product.name},${p.average_rating ?? 0}`
+    );
+  });
+
+  // ── DOWNLOAD ──
+  const blob = new Blob([rows.join("\n")], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `analytics-report-${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
+
+  // Effect 1: Fetch Dashboard Data
   useEffect(() => {
     cancelledRef.current = false;
     setIsLoading(true);
 
-    Promise.allSettled([
-      ministryApi.dashboard(),
-      regionalApi.comparison(),
-    ]).then(([dashRes, regRes]) => {
-      if (cancelledRef.current) return;
-      if (dashRes.status === "fulfilled")  setDashboard(dashRes.value);
-      if (regRes.status  === "fulfilled")  setRegionComp(regRes.value);
-      const anyFailed = [dashRes, regRes].some(r => r.status === "rejected");
-      if (anyFailed) setLoadError("Some data failed to load.");
-    }).finally(() => { if (!cancelledRef.current) setIsLoading(false); });
+    ministryApi.dashboard()
+      .then((data) => {
+        if (!cancelledRef.current) {
+          setDashboard(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelledRef.current) {
+          setLoadError("Failed to load dashboard data.");
+        }
+      })
+      .finally(() => {
+        if (!cancelledRef.current) {
+          setIsLoading(false);
+        }
+      });
 
-    return () => { cancelledRef.current = true; };
+    return () => {
+      cancelledRef.current = true;
+    };
   }, []);
 
+  // Effect 2: Fetch Top Products
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchTopProducts = async () => {
+      try {
+        const qs = new URLSearchParams({
+          ordering: "-average_rating", 
+          page_size: "5",
+        }).toString();
+
+        const res = await productApi.list(qs);
+
+        if (!cancelled) {
+          setTopProducts(res.results);
+        }
+      } catch (err) {
+        console.error("Failed to fetch top products", err);
+      }
+    };
+
+    fetchTopProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const charts = dashboard?.charts;
   const ov     = dashboard?.overview ?? null;
-  console.log(charts,ov);
-  
-
+const ratedProductsCount = topProducts.filter(p => p.average_rating !== null &&   Number(p.average_rating) !== 0 ).length;
+const avg_rating = topProducts.length > 0 
+  ? ratedProductsCount / topProducts.length 
+  : 0;
   // ── Derived chart data ────────────────────────────────────────────────────
 
-  const revenueBarData = useMemo(() =>
-    (charts?.revenue_over_time ?? []).map(d => ({
-      label: new Date(d.day).toLocaleDateString("fr-DZ", { month: "short", day: "2-digit" }),
-      value: d.total,
-    })), [charts]);
+const revenueBarData = useMemo(() =>
+  (charts?.revenue_trend ?? []).map(d => ({
+    label: new Date(d.month).toLocaleDateString("fr-DZ", { month: "short" }),
+    value: d.total,
+  })), [charts]);
 
-  const ordersBarData = useMemo(() =>
-    (charts?.orders_over_time ?? []).map(d => ({
-      label: new Date(d.day).toLocaleDateString("fr-DZ", { month: "short", day: "2-digit" }),
-      value: d.count,
-    })), [charts]);
+const revenueLine = useMemo(() =>
+  (charts?.revenue_trend ?? []).map(d => ({
+    label: new Date(d.month).toLocaleDateString("fr-DZ", { month: "short" }),
+    value: d.total,
+  })), [charts]);
 
-  const revenueLine = useMemo(() =>
-    (charts?.revenue_over_time ?? []).map(d => ({
-      label: new Date(d.day).toLocaleDateString("fr-DZ", { month: "short" }),
-      value: d.total,
-    })), [charts]);
 
-  // Category donut
-  const catTotal = useMemo(() => (charts?.category_distribution ?? []).reduce((s,c) => s + c.total, 0) || 1, [charts]);
   const catColors = ["#0df20d","#4ade80","#86efac","#bbf7c4","#d1fad1"];
-  const categoryDonut = useMemo(() =>
-    (charts?.category_distribution ?? []).map((c, i) => ({
-      label: c.product_item__category_name,
-      value: c.total,
-      color: catColors[i % catColors.length],
-    })), [charts]);
+const categoryDonut = useMemo(() =>
+  (charts?.user_distribution ?? []).map((c, i) => ({
+    label: apiRoleToDisplay(c.role) ?? c.role,
+    value: c.count,
+    color: catColors[i % catColors.length],
+  })), [charts]);
 
   // Regional revenue bars
   const regionColors: Record<string, string> = {
     north: "#0df20d", east: "#4ade80", west: "#09a009", south: "#d1fad1",
   };
-  const regionRevData = useMemo(() => {
-    const data = regionComp?.data ?? [];
-    return data.map(r => ({ label: r.region, value: r.revenue, color: regionColors[r.region] ?? "#94a3b8" }));
-  }, [regionComp]);
+const regionRevData = useMemo(() => {
+  const data = charts?.region_performance ?? [];
+
+  return data
+    .sort((a, b) => b.total - a.total) 
+    .map(r => ({
+      label: r.farm__wilaya,
+      value: r.total,
+      color: "#0df20d",
+    }));
+}, [charts]);
   const maxRegRev = Math.max(...regionRevData.map(r => r.value), 1);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -289,10 +396,14 @@ export default function MinistryAnalyticsPage() {
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Platform Analytics</h2>
               <p className="text-slate-500 text-sm mt-1">Performance insights from national agricultural data.</p>
             </div>
-            <button type="button" className="flex items-center px-4 py-2 bg-white dark:bg-neutral-dark border border-neutral-light rounded-lg text-sm font-medium shadow-sm hover:bg-slate-50 transition-colors text-slate-700">
-              <span className="material-icons text-base mr-2">cloud_download</span>
-              Export CSV
-            </button>
+<button
+  type="button"
+  onClick={exportAnalyticsCSV}
+  className="flex items-center px-4 py-2 bg-white dark:bg-neutral-dark border border-neutral-light rounded-lg text-sm font-medium shadow-sm hover:bg-slate-50 transition-colors text-slate-700"
+>
+  <span className="material-icons text-base mr-2">cloud_download</span>
+  Export CSV
+</button>
           </div>
 
           {loadError && (
@@ -308,7 +419,7 @@ export default function MinistryAnalyticsPage() {
               { label: "Total Revenue",  value: ov ? `${fmtDZD(ov.total_revenue)} DZD`  : "—", icon: "payments",        color: "text-primary"    },
               { label: "Monthly Revenue",value: ov ? `${fmtDZD(ov.monthly_revenue)} DZD`: "—", icon: "calendar_month",  color: "text-blue-500"   },
               { label: "Total Orders",   value: ov ? String(ov.total_orders)              : "—", icon: "receipt_long",   color: "text-purple-500" },
-              { label: "Avg Rating",     value: ov ? `${ov.avg_rating?.toFixed(2)} / 5` : "—", icon: "star",            color: "text-amber-500"  },
+              { label: "Avg Rating",     value: ov ? `${avg_rating?.toFixed(2)} / 5` : "—", icon: "star",            color: "text-amber-500"  },
             ].map(k => (
               <div key={k.label} className="bg-white dark:bg-neutral-dark rounded-xl border border-neutral-light dark:border-border-dark shadow-sm p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -324,7 +435,7 @@ export default function MinistryAnalyticsPage() {
 
           {/* ── Revenue trend + Orders ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-neutral-dark rounded-xl border border-neutral-light dark:border-border-dark shadow-sm p-6">
+            <div className="bg-white dark:bg-neutral-dark lg:w-[200%] rounded-xl border border-neutral-light dark:border-border-dark shadow-sm p-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold">Revenue Over Time</h3>
@@ -335,16 +446,6 @@ export default function MinistryAnalyticsPage() {
               <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-border-dark">
                 <LineSparkline data={revenueLine} color="#0bb80b" label="Revenue trend" />
               </div>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-dark rounded-xl border border-neutral-light dark:border-border-dark shadow-sm p-6">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold">Orders Per Day</h3>
-                  <p className="text-sm text-slate-500">Order volume over time</p>
-                </div>
-              </div>
-              <BarChart data={ordersBarData} color="#4ade80" isLoading={isLoading} label="Orders count" />
             </div>
           </div>
 
@@ -386,15 +487,16 @@ export default function MinistryAnalyticsPage() {
                   {/* Orders by region */}
                   <div className="pt-4 border-t border-neutral-100 dark:border-border-dark">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Orders by Region</p>
-                    {regionComp?.data.map(r => (
-                      <div key={r.region} className="flex items-center justify-between text-sm py-1.5 border-b border-neutral-50 dark:border-earth-800 last:border-0">
-                        <span className="font-medium capitalize text-slate-700 dark:text-slate-300">{r.region}</span>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="text-slate-500">{r.order_count} orders</span>
-                          <span className="font-bold text-primary">{r.total_active_prices} active prices</span>
-                        </div>
-                      </div>
-                    ))}
+{(charts?.region_performance ?? []).map(r => (
+  <div key={r.farm__wilaya} className="flex items-center justify-between text-sm py-1.5 border-b">
+    <span className="font-medium capitalize">
+      {r.farm__wilaya}
+    </span>
+    <span className="text-xs text-slate-500">
+      {fmtDZD(r.total)} DZD
+    </span>
+  </div>
+))}
                   </div>
                 </div>
               )}
@@ -409,37 +511,50 @@ export default function MinistryAnalyticsPage() {
                 <p className="text-sm text-slate-500">Best-performing products by units sold</p>
               </div>
             </div>
-            {isLoading ? (
-              <div className="space-y-3">{Array.from({length:5}).map((_,i)=><Skeleton key={i} className="h-10" />)}</div>
-            ) : (
-              <div className="space-y-3">
-                {(dashboard?.insights?.top_products ?? []).length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-6">No product data available.</p>
-                ) : (
-                  [...(dashboard?.insights?.top_products ?? [])]
-                    .sort((a, b) => (b.total_sold ?? 0) - (a.total_sold ?? 0))
-                    .map((p, i) => {
-                      const sold    = p.total_sold ?? 0;
-                      const maxSold = Math.max(...(dashboard?.insights?.top_products ?? []).map(pp => pp.total_sold ?? 0), 1);
-                      const pct     = (sold / maxSold) * 100;
-                      return (
-                        <div key={p.id} className="flex items-center gap-4">
-                          <span className="w-5 text-[10px] font-black text-slate-300 shrink-0">{String(i+1).padStart(2,"0")}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate capitalize">{p.ministry_product__name}</span>
-                              <span className="text-xs font-bold text-slate-500 ml-2 shrink-0">{sold > 0 ? `${sold} units` : "No sales"}</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-neutral-100 dark:bg-earth-800 rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full transition-all duration-700" style={{ width: `${Math.max(pct, 2)}%` }} />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                )}
-              </div>
-            )}
+           {topProducts.length === 0 ? (
+  <p className="text-sm text-slate-400 text-center py-6">
+    No product data available.
+  </p>
+) : (
+  [...topProducts]
+    // 1. Sort by average_rating descending
+    .sort((a, b) => (Number(b.average_rating) ?? 0) - (Number(a.average_rating) ?? 0))
+    .slice(0, 5)
+    .map((p, i) => {
+      const rating = Number(p.average_rating) ?? 0;
+      
+      // 2. Calculate percentage based on a max scale of 5
+      const pct = (rating / 5) * 100;
+
+      return (
+        <div key={p.id} className="flex items-center gap-4">
+          <span className="w-5 text-[10px] font-black text-slate-300 shrink-0">
+            {String(i + 1).padStart(2, "0")}
+          </span>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-semibold truncate capitalize text-slate-800 dark:text-slate-100">
+                {p.ministry_product.name}
+              </span>
+
+              {/* 3. Display rating value */}
+              <span className="text-xs font-bold text-slate-500 ml-2 shrink-0">
+                {rating > 0 ? `${rating.toFixed(1)} / 5` : "No ratings"}
+              </span>
+            </div>
+
+            <div className="h-1.5 w-full bg-neutral-100 dark:bg-earth-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-400 rounded-full transition-all duration-700" 
+                style={{ width: `${Math.max(pct, 2)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    })
+)}
           </div>
 
           {/* Footer */}

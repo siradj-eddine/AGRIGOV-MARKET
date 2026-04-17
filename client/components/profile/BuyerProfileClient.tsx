@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import PersonalDetailsCard from "./PersonalDetailsCard";
-import AccountSecurityCard from "./AccountSecurityCard";
 import ProfileCompletion   from "./ProfileCompletion";
 import { profileApi, ApiError } from "@/lib/api";
 import type {
@@ -151,22 +150,6 @@ export default function BuyerProfilePage() {
     }).finally(() => setActLoading(false));
   }, []);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setError("");
-    try {
-      await profileApi.updateUser(userForm);
-      const fd = new FormData();
-      if (profile.age !== null) fd.append("age", String(profile.age));
-      await profileApi.updateProfile(fd);
-      setToast("Profile saved.");
-      setTimeout(() => setToast(""), 3000);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const completionItems = [
     { label: "Email",    done: !!userForm.email      },
@@ -192,17 +175,6 @@ export default function BuyerProfilePage() {
               <span className="text-primary font-bold text-xs tracking-widest uppercase">Buyer Profile</span>
               <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight mt-1">Account Overview</h1>
               <p className="text-sm text-slate-500 mt-1">{extras.orders_count} order{extras.orders_count !== 1 ? "s" : ""} placed</p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => user && setUserForm({ email: user.email, username: user.username, phone: user.phone })}
-                className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 font-semibold rounded-full hover:bg-slate-200 transition-colors text-sm">
-                Discard
-              </button>
-              <button onClick={handleSave} disabled={isSaving}
-                className="px-7 py-2.5 bg-primary text-black font-bold rounded-full hover:opacity-90 active:scale-95 disabled:opacity-60 flex items-center gap-2 text-sm">
-                {isSaving && <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>}
-                Save Profile
-              </button>
             </div>
           </div>
 
@@ -259,12 +231,6 @@ export default function BuyerProfilePage() {
                 </h3>
                 <MyReviews reviews={reviews} isLoading={actLoading} />
               </section>
-
-              {/* Security */}
-              <AccountSecurityCard
-                settings={security}
-                onToggle={(id) => setSecurity((p) => p.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s))}
-              />
             </div>
           )}
 
