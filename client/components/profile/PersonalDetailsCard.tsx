@@ -1,10 +1,11 @@
 "use client";
 
 import type { ApiUser, EditableUserFields } from "@/types/Profile";
-
+import Image from "next/image";
 interface Props {
   user:     ApiUser;
   form:     EditableUserFields;
+  imageUrl?: string | null;
   onChange: <K extends keyof EditableUserFields>(k: K, v: EditableUserFields[K]) => void;
 }
 
@@ -18,7 +19,7 @@ const ROLE_LABELS: Record<string, string> = {
 const inp =
   "w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm";
 
-export default function PersonalDetailsCard({ user, form, onChange }: Props) {
+export default function PersonalDetailsCard({ user, form, imageUrl, onChange }: Props) {
   const memberYear = new Date(user.created_at).getFullYear();
   const initials   = (form.username || user.username).slice(0, 2).toUpperCase();
 
@@ -29,7 +30,11 @@ export default function PersonalDetailsCard({ user, form, onChange }: Props) {
       {/* Avatar + identity */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8">
         <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border-4 border-white shadow-md">
-          <span className="text-2xl font-black text-primary-dark">{initials}</span>
+          {imageUrl ? (
+            <Image src={imageUrl} alt="Avatar" width={80} height={80} className="w-full h-full object-cover rounded-full" />
+          ) : (
+            <span className="text-2xl font-black text-primary-dark">{initials}</span>
+          )}
         </div>
         <div className="space-y-1.5">
           <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{form.username}</h3>

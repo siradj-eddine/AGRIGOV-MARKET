@@ -14,7 +14,7 @@ export interface ApiUser {
   role:        UserRole;
   is_verified: boolean;
   is_active:   boolean;
-  created_at:  string; // ISO-8601
+  created_at:  string;
 }
 
 // ── Role-specific profile shapes ─────────────────────────────────────────────
@@ -25,19 +25,22 @@ export interface FarmerProfile {
   baladiya:            string;
   farm_size:           number | null;
   address:             string;           // lowercase in new API
-  farmer_card_image:   string | null;    // Cloudinary URL
+  farmer_card_image:   string | null;    
   national_id_image:   string | null;    // renamed from national_card_image
+  profile_image:       string | null;    
 }
 
 export interface BuyerProfile {
   age: number | null;
-  // business_license_image removed from profile per new API
+  bussiness_license_image: string | null;
+  profile_image: string | null;   
 }
 
 export interface TransporterProfile {
   age:                  number | null;
-  driver_license_image: string | null;   // Cloudinary URL
-  grey_card_image:      string | null;   // Cloudinary URL
+  driver_license_image: string | null;   
+  grey_card_image:      string | null;   
+  profile_image:        string | null;   
   // vehicle fields are separate (extras.vehicles_count)
 }
 

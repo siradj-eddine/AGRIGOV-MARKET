@@ -3,17 +3,15 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import PersonalDetailsCard from "./PersonalDetailsCard";
-import ProfileCompletion   from "./ProfileCompletion";
 import { profileApi, transporterApi , ApiError } from "@/lib/api";
 import type {
   ApiUser,
   TransporterProfile,
   TransporterExtras,
   EditableUserFields,
-  SecuritySetting,
   MissionSummary,
 } from "@/types/Profile";
-import { DEFAULT_SECURITY_SETTINGS, MISSION_STATUS_STYLES } from "@/types/Profile";
+import { MISSION_STATUS_STYLES } from "@/types/Profile";
 import { MissionsApiResponse } from "@/types/Missions";
 
 // ── Document images card ──────────────────────────────────────────────────────
@@ -132,7 +130,7 @@ function Skeleton() {
 export default function TransporterProfilePage() {
   const [user,       setUser]      = useState<ApiUser | null>(null);
   const [profile,    setProfile]   = useState<TransporterProfile>({
-    age: null, driver_license_image: null, grey_card_image: null,
+    age: null, driver_license_image: null, grey_card_image: null, profile_image: null,
   });
   const [extras,     setExtras]    = useState<TransporterExtras>({ vehicles_count: 0 });
   const [userForm,   setUserForm]  = useState<EditableUserFields>({ email: "", username: "", phone: "" });
@@ -219,12 +217,9 @@ useEffect(() => {
       <div className="max-w-6xl mx-auto"><Skeleton /></div>
     </div>
   );
-
-  console.log(missions);
   
-
   return (
-    <div className="font-display xl:ml-64 bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
       <main className="px-4 sm:px-6 py-8 pb-24 md:pb-12">
         <div className="max-w-6xl mx-auto space-y-6">
 
@@ -244,7 +239,7 @@ useEffect(() => {
           {user && (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Row 1 */}
-              <PersonalDetailsCard user={user} form={userForm} onChange={(k, v) => setUserForm((p) => ({ ...p, [k]: v }))} />
+              <PersonalDetailsCard user={user} imageUrl={profile.profile_image} form={userForm} onChange={(k, v) => setUserForm((p) => ({ ...p, [k]: v }))} />
 
               {/* Driver stats */}
               <section className="md:col-span-4 bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-primary/10 space-y-4">
@@ -285,8 +280,6 @@ useEffect(() => {
               </section>
             </div>
           )}
-
-          <ProfileCompletion percent={percent} items={completionItems} />
         </div>
       </main>
     </div>

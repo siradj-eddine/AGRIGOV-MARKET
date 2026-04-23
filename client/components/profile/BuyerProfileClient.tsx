@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import PersonalDetailsCard from "./PersonalDetailsCard";
-import ProfileCompletion   from "./ProfileCompletion";
 import { profileApi, ApiError } from "@/lib/api";
 import type {
   ApiUser,
@@ -15,6 +14,7 @@ import type {
   ReviewSummary,
 } from "@/types/Profile";
 import { DEFAULT_SECURITY_SETTINGS, ORDER_STATUS_STYLES } from "@/types/Profile";
+import Image from "next/image";
 
 // ── Orders panel ─────────────────────────────────────────────────────────────
 
@@ -117,7 +117,7 @@ function Skeleton() {
 
 export default function BuyerProfilePage() {
   const [user,       setUser]      = useState<ApiUser | null>(null);
-  const [profile,    setProfile]   = useState<BuyerProfile>({ age: null });
+  const [profile,    setProfile]   = useState<BuyerProfile>({ age: null , profile_image: null, bussiness_license_image: null });
   const [extras,     setExtras]    = useState<BuyerExtras>({ orders_count: 0 });
   const [userForm,   setUserForm]  = useState<EditableUserFields>({ email: "", username: "", phone: "" });
   const [orders,     setOrders]    = useState<OrderSummary[]>([]);
@@ -164,6 +164,7 @@ export default function BuyerProfilePage() {
       <div className="max-w-6xl mx-auto"><Skeleton /></div>
     </div>
   );
+  
 
   return (
     <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
@@ -184,7 +185,37 @@ export default function BuyerProfilePage() {
           {user && (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Personal info */}
-              <PersonalDetailsCard user={user} form={userForm} onChange={(k, v) => setUserForm((p) => ({ ...p, [k]: v }))} />
+              <PersonalDetailsCard user={user} imageUrl={profile.profile_image} form={userForm} onChange={(k, v) => setUserForm((p) => ({ ...p, [k]: v }))} />
+
+            {/* Business License Image */}
+<section className="md:col-span-4 bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-primary/10">
+  <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
+    <span
+      className="material-symbols-outlined text-primary"
+      style={{ fontVariationSettings: "'FILL' 1" }}
+    >
+      badge
+    </span>
+    Business License
+  </h3>
+
+  {!profile.bussiness_license_image
+ ? (
+    <div className="text-sm text-slate-400 text-center py-10">
+      No business license uploaded.
+    </div>
+  ) : (
+    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+      <Image
+        src={profile.bussiness_license_image}
+        width={200}
+        height={100}
+        alt="Business License"
+        className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300"
+      />
+    </div>
+  )}
+</section>
 
               {/* Stats sidebar */}
               <section className="md:col-span-4 bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-primary/10 space-y-4">
@@ -192,7 +223,7 @@ export default function BuyerProfilePage() {
                 {/* Age edit */}
                 <div className="space-y-1.5">
                   <label className="block text-slate-500 text-xs font-bold uppercase tracking-wider">Age</label>
-                  <input type="number" min={18} value={profile.age ?? ""} onChange={(e) => setProfile({ age: parseInt(e.target.value) })}
+                  <input type="number" min={18} value={profile.age ?? ""} onChange={(e) => setProfile({ age: parseInt(e.target.value), profile_image: profile.profile_image, bussiness_license_image: profile.bussiness_license_image })}
                     className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/50 outline-none text-sm"
                     placeholder="e.g. 30" />
                 </div>
@@ -233,8 +264,6 @@ export default function BuyerProfilePage() {
               </section>
             </div>
           )}
-
-          <ProfileCompletion percent={percent} items={completionItems} />
         </div>
       </main>
     </div>

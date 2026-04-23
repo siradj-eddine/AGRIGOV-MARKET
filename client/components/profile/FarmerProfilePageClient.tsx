@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import PersonalDetailsCard from "./PersonalDetailsCard";
-import ProfileCompletion   from "./ProfileCompletion";
 import { profileApi, ApiError } from "@/lib/api";
 import type {
   ApiUser,
@@ -172,7 +171,7 @@ export default function FarmerProfilePage() {
   const [user,      setUser]      = useState<ApiUser | null>(null);
   const [profile,   setProfile]   = useState<FarmerProfile>({
     age: null, wilaya: "", baladiya: "", farm_size: null, address: "",
-    farmer_card_image: null, national_id_image: null,
+    farmer_card_image: null, national_id_image: null, profile_image: null,
   });
   const [extras,    setExtras]    = useState<FarmerExtras>({ farms_count: 0 });
   const [userForm,  setUserForm]  = useState<EditableUserFields>({ email: "", username: "", phone: "" });
@@ -254,6 +253,7 @@ export default function FarmerProfilePage() {
               {/* Row 1 */}
               <PersonalDetailsCard
                 user={user}
+                imageUrl={profile.profile_image}
                 form={userForm}
                 onChange={(k, v) => setUserForm((p) => ({ ...p, [k]: v }))}
               />
@@ -266,8 +266,6 @@ export default function FarmerProfilePage() {
               />
             </div>
           )}
-
-          <ProfileCompletion percent={percent} items={completionItems} />
         </div>
       </main>
     </div>

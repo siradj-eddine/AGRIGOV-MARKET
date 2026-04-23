@@ -6,7 +6,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
-
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from missions.permissions import IsAdmin
 from .models import MinistryProfile, User, FarmerProfile, TransporterProfile, BuyerProfile
 from .serializers import (
@@ -120,82 +121,72 @@ class MeView(APIView):
         )
 
 
-class FarmerProfileView(generics.CreateAPIView):
-    serializer_class = FarmerProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+class FarmerProfileView(APIView):
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def get_serializer_context(self):
-        return super().get_serializer_context()
+    def get(self, request):
+        profile = getattr(request.user, "farmer_profile", None)
+        if not profile:
+            return Response({"detail": "Profile not found"}, status=404)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        profile = serializer.save()
-        
-        return Response(
-            {
-                "status": "success",
-                "code": status.HTTP_201_CREATED,
-                "message": "Farmer profile created successfully",
-                "data": {
-                    "profile": FarmerProfileSerializer(profile).data
-                }
-            },
-            status=status.HTTP_201_CREATED
+        serializer = FarmerProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def post(self, request):
+        if hasattr(request.user, "farmer_profile"):
+            return Response(
+                {"detail": "Profile already exists"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = FarmerProfileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=201)
+
+        return Response(serializer.errors, status=400)
+
+    def put(self, request):
+        profile = getattr(request.user, "farmer_profile", None)
+        if not profile:
+            return Response({"detail": "Profile not found"}, status=404)
+
+        serializer = FarmerProfileSerializer(
+            profile, data=request.data, partial=True
         )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
 
 
-class TransporterProfileView(generics.CreateAPIView):
+class TransporterProfileView(generics.RetrieveUpdateAPIView, generics.CreateAPIView):
     serializer_class = TransporterProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def get_serializer_context(self):
-        return super().get_serializer_context()
+    def get_queryset(self):
+        return TransporterProfile.objects.filter(user=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        profile = serializer.save()
-        
-        return Response(
-            {
-                "status": "success",
-                "code": status.HTTP_201_CREATED,
-                "message": "Transporter profile created successfully",
-                "data": {
-                    "profile": TransporterProfileSerializer(profile).data
-                }
-            },
-            status=status.HTTP_201_CREATED
-        )
+    def get_object(self):
+        return TransporterProfile.objects.get(user=self.request.user)
 
-
-class BuyerProfileView(generics.CreateAPIView):
+class BuyerProfileView(generics.RetrieveUpdateAPIView, generics.CreateAPIView):
     serializer_class = BuyerProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def get_serializer_context(self):
-        return super().get_serializer_context()
+    def get_queryset(self):
+        return BuyerProfile.objects.filter(user=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        profile = serializer.save()
-        
-        return Response(
-            {
-                "status": "success",
-                "code": status.HTTP_201_CREATED,
-                "message": "Buyer profile created successfully",
-                "data": {
-                    "profile": BuyerProfileSerializer(profile).data
-                }
-            },
-            status=status.HTTP_201_CREATED
-        )
+    def get_object(self):
+        return BuyerProfile.objects.get(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class MinistryProfileView(generics.RetrieveUpdateAPIView):

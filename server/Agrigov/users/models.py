@@ -79,6 +79,13 @@ class FarmerProfile(models.Model):
         folder="AGRIGOV/farmers/ids",
         transformation={"quality": "auto", "fetch_format": "auto"}
     )
+    profile_image = CloudinaryField(
+    "profile_image",
+    folder="AGRIGOV/profiles/farmers",
+    transformation={"quality": "auto", "fetch_format": "auto"},
+    blank=True,
+    null=True
+    )
 
     # Validation fields
     is_validated = models.BooleanField(default=False)
@@ -124,6 +131,13 @@ class TransporterProfile(models.Model):
         folder="AGRIGOV/transporters/greyCards",
         transformation={"quality": "auto", "fetch_format": "auto"}
     )
+    profile_image = CloudinaryField(
+    "profile_image",
+    folder="AGRIGOV/profiles/transporters",
+    transformation={"quality": "auto", "fetch_format": "auto"},
+    blank=True,
+    null=True
+)
 
     # Validation fields
     is_validated = models.BooleanField(default=False)
@@ -163,6 +177,13 @@ class BuyerProfile(models.Model):
         folder="AGRIGOV/buyers/businessLicenses",
         transformation={"quality": "auto", "fetch_format": "auto"}
     )
+    profile_image = CloudinaryField(
+    "profile_image",
+    folder="AGRIGOV/profiles/buyers",
+    transformation={"quality": "auto", "fetch_format": "auto"},
+    blank=True,
+    null=True
+)
     wilaya = models.CharField(max_length=100, blank=True)
 
     # Validation fields

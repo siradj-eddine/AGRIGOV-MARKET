@@ -6,6 +6,7 @@ import type {
 } from "@/types/Register";
 import { WILAYAS, VEHICLE_TYPES } from "@/types/Register";
 import FileUpload from "./FileUpload";
+import AvatarUpload from "./AvatarUpload";
 
 const field =
   "block w-full py-2.5 px-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400 focus:border-primary focus:ring-primary focus:outline-none text-sm transition";
@@ -22,6 +23,12 @@ interface FarmerProps {
 function FarmerForm({ form, onChange }: FarmerProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Avatar — full width, always first */}
+      <AvatarUpload
+        file={form.profile_image}
+        onChange={(f) => onChange("profile_image", f)}
+      />
+
       {/* Age */}
       <div className="space-y-1.5">
         <label htmlFor="age" className={label}>Age</label>
@@ -36,6 +43,7 @@ function FarmerForm({ form, onChange }: FarmerProps) {
           className={field}
         />
       </div>
+
       {/* Wilaya */}
       <div className="space-y-1.5">
         <label htmlFor="wilaya" className={label}>Wilaya</label>
@@ -143,6 +151,13 @@ interface BuyerProps {
 function BuyerForm({ form, onChange }: BuyerProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Avatar — full width, always first */}
+      <AvatarUpload
+        file={form.profile_image}
+        onChange={(f) => onChange("profile_image", f)}
+      />
+
+      {/* Age */}
       <div className="space-y-1.5">
         <label htmlFor="age" className={label}>Age</label>
         <input
@@ -157,6 +172,7 @@ function BuyerForm({ form, onChange }: BuyerProps) {
         />
       </div>
 
+      {/* Business license — full width */}
       <div className="md:col-span-2">
         <FileUpload
           label="Business License"
@@ -179,6 +195,12 @@ interface TransporterProps {
 function TransporterForm({ form, onChange }: TransporterProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Avatar — full width, always first */}
+      <AvatarUpload
+        file={form.profile_image}
+        onChange={(f) => onChange("profile_image", f)}
+      />
+
       {/* Age */}
       <div className="space-y-1.5">
         <label htmlFor="age" className={label}>Age</label>
@@ -277,19 +299,19 @@ function TransporterForm({ form, onChange }: TransporterProps) {
 // ─── Dispatcher ───────────────────────────────────────────────────────────────
 
 interface ProfileStepProps {
-  role: RegisterRole;
-  farmerForm: FarmerProfileState;
-  buyerForm: BuyerProfileState;
+  role:            RegisterRole;
+  farmerForm:      FarmerProfileState;
+  buyerForm:       BuyerProfileState;
   transporterForm: TransporterProfileState;
-  onFarmerChange: FarmerProps["onChange"];
-  onBuyerChange: BuyerProps["onChange"];
+  onFarmerChange:      FarmerProps["onChange"];
+  onBuyerChange:       BuyerProps["onChange"];
   onTransporterChange: TransporterProps["onChange"];
 }
 
 const roleHeadings: Record<RegisterRole, { title: string; subtitle: string }> = {
-  FARMER:      { title: "Farm Details",       subtitle: "Tell us about your farm and upload your documents." },
-  BUYER:       { title: "Buyer Profile",       subtitle: "Provide your business details for verification." },
-  TRANSPORTER: { title: "Transporter Profile", subtitle: "Add your vehicle information to get started." },
+  FARMER:      { title: "Farm Details",        subtitle: "Tell us about your farm and upload your documents."   },
+  BUYER:       { title: "Buyer Profile",        subtitle: "Provide your business details for verification."      },
+  TRANSPORTER: { title: "Transporter Profile",  subtitle: "Add your vehicle information to get started."         },
 };
 
 export default function ProfileStep({

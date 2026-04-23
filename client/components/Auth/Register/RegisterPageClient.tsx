@@ -5,12 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ApiError } from "@/lib/api";
 
-import Stepper           from "./Stepper";
-import RoleStep          from "./RoleStep";
-import AccountStep       from "./AccountStep";
-import ProfileStep       from "./ProfileStep";
-import SuccessStep       from "./SuccessStep";
-import RegistrationSidebar from "./SideBar";
+import Stepper              from "./Stepper";
+import RoleStep             from "./RoleStep";
+import AccountStep          from "./AccountStep";
+import ProfileStep          from "./ProfileStep";
+import SuccessStep          from "./SuccessStep";
+import RegistrationSidebar  from "./SideBar";
 
 import type {
   RegisterRole,
@@ -29,17 +29,23 @@ const INITIAL_ACCOUNT: AccountFormState = {
 };
 
 const INITIAL_FARMER: FarmerProfileState = {
-  wilaya: "", baladiya: "", farm_name: "", farm_size: "", Address: "",
-  farmer_card_image: null, national_card_image: null, age: "0"
+  age: "0", wilaya: "", baladiya: "", farm_name: "", farm_size: "", Address: "",
+  profile_image:       null,
+  farmer_card_image:   null,
+  national_card_image: null,
 };
 
 const INITIAL_BUYER: BuyerProfileState = {
-  age: "", business_license_image: null,
+  age: "",
+  profile_image:          null,
+  business_license_image: null,
 };
 
 const INITIAL_TRANSPORTER: TransporterProfileState = {
-  age: "", vehicule_type: "", vehicule_model: "", vehicule_year: "",
-  vehicule_capacity: "", driver_license_image: null, grey_card_image: null,
+  age: "", vehicule_type: "", vehicule_model: "", vehicule_year: "", vehicule_capacity: "",
+  profile_image:        null,
+  driver_license_image: null,
+  grey_card_image:      null,
 };
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -58,20 +64,31 @@ function validateAccount(form: AccountFormState): string | null {
   return null;
 }
 
-function validateProfile(role: RegisterRole, f: FarmerProfileState, b: BuyerProfileState, t: TransporterProfileState): string | null {
+function validateProfile(
+  role: RegisterRole,
+  f: FarmerProfileState,
+  b: BuyerProfileState,
+  t: TransporterProfileState,
+): string | null {
+  // Avatar required for every role
+  const avatar =
+    role === "FARMER" ? f.profile_image :
+    role === "BUYER"  ? b.profile_image : t.profile_image;
+  if (!avatar) return "A profile photo is required.";
+
   if (role === "FARMER") {
-    if (!f.wilaya)             return "Please select your wilaya.";
-    if (!f.baladiya.trim())    return "Baladiya is required.";
-    if (!f.farm_name.trim())   return "Farm name is required.";
-    if (!f.farm_size)          return "Farm size is required.";
-    if (!f.age || Number(f.age) < 18)  return "Please enter a valid age (18+).";
-    if (!f.Address.trim())     return "Address is required.";
-    if (!f.farmer_card_image)  return "Farmer card image is required.";
+    if (!f.wilaya)              return "Please select your wilaya.";
+    if (!f.baladiya.trim())     return "Baladiya is required.";
+    if (!f.farm_name.trim())    return "Farm name is required.";
+    if (!f.farm_size)           return "Farm size is required.";
+    if (!f.age || Number(f.age) < 18) return "Please enter a valid age (18+).";
+    if (!f.Address.trim())      return "Address is required.";
+    if (!f.farmer_card_image)   return "Farmer card image is required.";
     if (!f.national_card_image) return "National ID card is required.";
   }
   if (role === "BUYER") {
-    if (!b.age || Number(b.age) < 18)  return "Please enter a valid age (18+).";
-    if (!b.business_license_image)     return "Business license image is required.";
+    if (!b.age || Number(b.age) < 18) return "Please enter a valid age (18+).";
+    if (!b.business_license_image)    return "Business license image is required.";
   }
   if (role === "TRANSPORTER") {
     if (!t.age || Number(t.age) < 18)  return "Please enter a valid age (18+).";
@@ -91,7 +108,7 @@ const BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://loca
 
 async function registerUser(account: AccountFormState, role: RegisterRole) {
   const res = await fetch(`${BASE}/api/users/auth/register/`, {
-    method: "POST",
+    method:  "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email:    account.email.trim(),
@@ -102,11 +119,10 @@ async function registerUser(account: AccountFormState, role: RegisterRole) {
     }),
   });
   const json = await res.json().catch(() => ({}));
-  console.log(json);
   if (!res.ok) throw new ApiError(res.status, json?.message ?? json?.detail ?? "Registration failed.");
-  localStorage.setItem("access", json?.data?.tokens?.access ?? "");
-  localStorage.setItem("refresh", json?.data?.tokens?.refresh ?? "");  
-  return json; // { status, code, message, data: { user } }
+  localStorage.setItem("access",  json?.data?.tokens?.access  ?? "");
+  localStorage.setItem("refresh", json?.data?.tokens?.refresh ?? "");
+  return json;
 }
 
 async function submitFarmerProfile(form: FarmerProfileState) {
@@ -116,12 +132,16 @@ async function submitFarmerProfile(form: FarmerProfileState) {
   fd.append("farm_name", form.farm_name);
   fd.append("farm_size", form.farm_size);
   fd.append("address",   form.Address);
-  
-  fd.append("age", form.age ?? ""); // Optional field, send empty string if not provided
-  if (form.farmer_card_image)  fd.append("farmer_card_image",  form.farmer_card_image);
-  if (form.national_card_image) fd.append("national_id_image", form.national_card_image);
+  fd.append("age",       form.age ?? "");
+  if (form.profile_image)      fd.append("profile_image_upload",     form.profile_image);
+  if (form.farmer_card_image)  fd.append("farmer_card_image_upload", form.farmer_card_image);
+  if (form.national_card_image) fd.append("national_id_image_upload", form.national_card_image);
 
-  const res = await fetch(`${BASE}/api/users/auth/farmer-profile/`, { method: "POST", body: fd , headers: { "Authorization": `Bearer ${localStorage.getItem("access") ?? ""}` }});
+  const res = await fetch(`${BASE}/api/users/auth/farmer-profile/`, {
+    method:  "POST",
+    body:    fd,
+    headers: { Authorization: `Bearer ${localStorage.getItem("access") ?? ""}` },
+  });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, json?.message ?? "Failed to submit farmer profile.");
 }
@@ -129,24 +149,34 @@ async function submitFarmerProfile(form: FarmerProfileState) {
 async function submitBuyerProfile(form: BuyerProfileState) {
   const fd = new FormData();
   fd.append("age", form.age);
-  if (form.business_license_image) fd.append("bussiness_license_image", form.business_license_image);
+  if (form.profile_image)          fd.append("profile_image_upload",           form.profile_image);
+  if (form.business_license_image) fd.append("bussiness_license_image_upload", form.business_license_image);
 
-  const res = await fetch(`${BASE}/api/users/auth/buyer-profile/`, { method: "POST", body: fd , headers: { "Authorization": `Bearer ${localStorage.getItem("access") ?? ""}` }});
+  const res = await fetch(`${BASE}/api/users/auth/buyer-profile/`, {
+    method:  "POST",
+    body:    fd,
+    headers: { Authorization: `Bearer ${localStorage.getItem("access") ?? ""}` },
+  });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, json?.message ?? "Failed to submit buyer profile.");
 }
 
 async function submitTransporterProfile(form: TransporterProfileState) {
   const fd = new FormData();
-  fd.append("age",              form.age);
-  fd.append("vehicle_type",    form.vehicule_type);
-  fd.append("vehicle_model",   form.vehicule_model);
-  fd.append("vehicle_year",    form.vehicule_year);
-  fd.append("vehicle_capacity", form.vehicule_capacity);
+  fd.append("age",               form.age);
+  fd.append("vehicle_type",      form.vehicule_type);
+  fd.append("vehicle_model",     form.vehicule_model);
+  fd.append("vehicle_year",      form.vehicule_year);
+  fd.append("vehicle_capacity",  form.vehicule_capacity);
+  if (form.profile_image)        fd.append("profile_image",        form.profile_image);
   if (form.driver_license_image) fd.append("driver_license_image", form.driver_license_image);
-  if (form.grey_card_image)      fd.append("grey_card_image",        form.grey_card_image);
+  if (form.grey_card_image)      fd.append("grey_card_image",      form.grey_card_image);
 
-  const res = await fetch(`${BASE}/api/users/auth/transporter-profile/`, { method: "POST", body: fd ,headers:{ "Authorization": `Bearer ${localStorage.getItem("access") ?? ""}` }});
+  const res = await fetch(`${BASE}/api/users/auth/transporter-profile/`, {
+    method:  "POST",
+    body:    fd,
+    headers: { Authorization: `Bearer ${localStorage.getItem("access") ?? ""}` },
+  });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, json?.message ?? "Failed to submit transporter profile.");
 }
@@ -154,34 +184,31 @@ async function submitTransporterProfile(form: TransporterProfileState) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function RegistrationPage() {
-  const [step,       setStep]       = useState<RegistrationStep>(1);
-  const [done,       setDone]       = useState(false);
-  const [role,       setRole]       = useState<RegisterRole>("FARMER");
-  const [account,    setAccount]    = useState<AccountFormState>(INITIAL_ACCOUNT);
-  const [farmer,     setFarmer]     = useState<FarmerProfileState>(INITIAL_FARMER);
-  const [buyer,      setBuyer]      = useState<BuyerProfileState>(INITIAL_BUYER);
+  const [step,        setStep]        = useState<RegistrationStep>(1);
+  const [done,        setDone]        = useState(false);
+  const [role,        setRole]        = useState<RegisterRole>("FARMER");
+  const [account,     setAccount]     = useState<AccountFormState>(INITIAL_ACCOUNT);
+  const [farmer,      setFarmer]      = useState<FarmerProfileState>(INITIAL_FARMER);
+  const [buyer,       setBuyer]       = useState<BuyerProfileState>(INITIAL_BUYER);
   const [transporter, setTransporter] = useState<TransporterProfileState>(INITIAL_TRANSPORTER);
-  const [error,      setError]      = useState("");
-  const [isLoading,  setIsLoading]  = useState(false);
+  const [error,       setError]       = useState("");
+  const [isLoading,   setIsLoading]   = useState(false);
 
   const setAccountField = useCallback(
     <K extends keyof AccountFormState>(k: K, v: AccountFormState[K]) =>
       setAccount((p) => ({ ...p, [k]: v })),
     [],
   );
-
   const setFarmerField = useCallback(
     <K extends keyof FarmerProfileState>(k: K, v: FarmerProfileState[K]) =>
       setFarmer((p) => ({ ...p, [k]: v })),
     [],
   );
-
   const setBuyerField = useCallback(
     <K extends keyof BuyerProfileState>(k: K, v: BuyerProfileState[K]) =>
       setBuyer((p) => ({ ...p, [k]: v })),
     [],
   );
-
   const setTransporterField = useCallback(
     <K extends keyof TransporterProfileState>(k: K, v: TransporterProfileState[K]) =>
       setTransporter((p) => ({ ...p, [k]: v })),
@@ -198,13 +225,8 @@ export default function RegistrationPage() {
   const handleContinue = async () => {
     setError("");
 
-    // Step 1 → 2: just advance
-    if (step === 1) {
-      setStep(2);
-      return;
-    }
+    if (step === 1) { setStep(2); return; }
 
-    // Step 2 → 3: validate account fields
     if (step === 2) {
       const err = validateAccount(account);
       if (err) { setError(err); return; }
@@ -212,16 +234,14 @@ export default function RegistrationPage() {
       return;
     }
 
-    // Step 3: validate profile, then call both APIs
+    // Step 3 — validate then submit
     const profileErr = validateProfile(role, farmer, buyer, transporter);
     if (profileErr) { setError(profileErr); return; }
 
     setIsLoading(true);
     try {
-      // 1 — create the base account
       await registerUser(account, role);
 
-      // 2 — submit the role-specific profile
       if (role === "FARMER")      await submitFarmerProfile(farmer);
       if (role === "BUYER")        await submitBuyerProfile(buyer);
       if (role === "TRANSPORTER") await submitTransporterProfile(transporter);
@@ -229,7 +249,6 @@ export default function RegistrationPage() {
       setDone(true);
     } catch (err) {
       if (err instanceof ApiError) {
-        // If it's a 4xx on the register call, drop back to step 2
         if (err.status === 400 || err.status === 409) setStep(2);
         setError(err.message);
       } else {
@@ -248,10 +267,8 @@ export default function RegistrationPage() {
         <div className="w-full max-w-5xl grid lg:grid-cols-12 gap-8 items-start">
           <RegistrationSidebar />
 
-          {/* Form card */}
           <div className="lg:col-span-8 w-full">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-
               {done ? (
                 <div className="p-6 sm:p-8">
                   <SuccessStep email={account.email} />
@@ -261,8 +278,6 @@ export default function RegistrationPage() {
                   <Stepper currentStep={step} />
 
                   <div className="p-6 sm:p-8 space-y-8">
-
-                    {/* Error banner */}
                     {error && (
                       <div
                         role="alert"
@@ -273,7 +288,6 @@ export default function RegistrationPage() {
                       </div>
                     )}
 
-                    {/* Step content */}
                     <div key={step}>
                       {step === 1 && (
                         <RoleStep selected={role} onSelect={(r) => { setRole(r); setError(""); }} />
@@ -294,7 +308,6 @@ export default function RegistrationPage() {
                       )}
                     </div>
 
-                    {/* Navigation */}
                     <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
                       <button
                         type="button"
@@ -336,7 +349,6 @@ export default function RegistrationPage() {
               )}
             </div>
 
-            {/* Footer */}
             {!done && (
               <div className="mt-6 text-center space-y-2">
                 <p className="text-sm text-gray-500">
@@ -347,13 +359,7 @@ export default function RegistrationPage() {
                 </p>
                 <div className="flex items-center justify-center gap-4 opacity-50 hover:opacity-100 transition-opacity">
                   <div className="relative h-7 w-7">
-                    <Image
-                      src={COAT_OF_ARMS_URL}
-                      alt="National Coat of Arms"
-                      fill
-                      className="object-contain"
-                      sizes="28px"
-                    />
+                    <Image src={COAT_OF_ARMS_URL} alt="National Coat of Arms" fill className="object-contain" sizes="28px" />
                   </div>
                   <span className="text-xs text-gray-400 font-semibold uppercase tracking-widest border-l border-gray-300 pl-4">
                     Official Ministry Platform

@@ -49,25 +49,28 @@ export interface AccountFormState {
 
 /** Step 3 — farmer */
 export interface FarmerProfileState {
-  wilaya:             string;
-  age:                string;
-  baladiya:           string;
-  farm_name:          string;
-  farm_size:          string;
-  Address:            string;
-  farmer_card_image:  File | null;
+  age:                 string;
+  wilaya:              string;
+  baladiya:            string;
+  farm_name:           string;
+  farm_size:           string;
+  Address:             string;
+  profile_image:       File | null;   // avatar — required by backend
+  farmer_card_image:   File | null;
   national_card_image: File | null;
 }
 
 /** Step 3 — buyer */
 export interface BuyerProfileState {
   age:                    string;
+  profile_image:          File | null;   // avatar — required by backend
   business_license_image: File | null;
 }
 
 /** Step 3 — transporter */
 export interface TransporterProfileState {
   age:                  string;
+  profile_image:        File | null;   // avatar — required by backend
   vehicule_type:        string;
   vehicule_model:       string;
   vehicule_year:        string;

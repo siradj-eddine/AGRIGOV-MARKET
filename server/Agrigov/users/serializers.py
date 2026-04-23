@@ -88,6 +88,13 @@ class LoginSerializer(serializers.Serializer):
 
 
 class FarmerProfileSerializer(serializers.ModelSerializer):
+    # WRITE fields
+    profile_image_upload = serializers.ImageField(write_only=True, required=False)
+    farmer_card_image_upload = serializers.ImageField(write_only=True, required=True)
+    national_id_image_upload = serializers.ImageField(write_only=True, required=True)
+
+    #  READ fields 
+    profile_image = serializers.SerializerMethodField()
     farmer_card_image = serializers.SerializerMethodField()
     national_id_image = serializers.SerializerMethodField()
 
@@ -99,9 +106,20 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
             "baladiya",
             "farm_size",
             "address",
+
+            # read
+            "profile_image",
             "farmer_card_image",
             "national_id_image",
+
+            # write
+            "profile_image_upload",
+            "farmer_card_image_upload",
+            "national_id_image_upload",
         ]
+
+    def get_profile_image(self, obj):
+        return build_cloudinary_url(obj.profile_image)
 
     def get_farmer_card_image(self, obj):
         return build_cloudinary_url(obj.farmer_card_image)
@@ -109,10 +127,26 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
     def get_national_id_image(self, obj):
         return build_cloudinary_url(obj.national_id_image)
 
+    def create(self, validated_data):
+        profile_image = validated_data.pop("profile_image_upload", None)
+        farmer_card = validated_data.pop("farmer_card_image_upload")
+        national_id = validated_data.pop("national_id_image_upload")
+
+        profile = FarmerProfile.objects.create(**validated_data)
+
+        if profile_image:
+            profile.profile_image = profile_image
+
+        profile.farmer_card_image = farmer_card
+        profile.national_id_image = national_id
+        profile.save()
+
+        return profile
 
 class TransporterProfileSerializer(serializers.ModelSerializer):
-    driver_license_image = serializers.SerializerMethodField()
-    grey_card_image = serializers.SerializerMethodField()
+    profile_image = serializers.ImageField(required=False, allow_null=True)
+    driver_license_image = serializers.ImageField(required=False, allow_null=True)
+    grey_card_image = serializers.ImageField(required=False, allow_null=True)
 
     vehicle_type = serializers.CharField(write_only=True)
     vehicle_model = serializers.CharField(write_only=True)
@@ -123,13 +157,43 @@ class TransporterProfileSerializer(serializers.ModelSerializer):
         model = TransporterProfile
         fields = [
             "age",
+            "profile_image",
             "driver_license_image",
             "grey_card_image",
+
+            # vehicle inputs
             "vehicle_type",
             "vehicle_model",
             "vehicle_year",
             "vehicle_capacity",
         ]
+        
+    def create(self, validated_data):
+        user = self.context["request"].user
+
+        vehicle_data = {
+            "type": validated_data.pop("vehicle_type"),
+            "model": validated_data.pop("vehicle_model"),
+            "year": validated_data.pop("vehicle_year"),
+            "capacity": validated_data.pop("vehicle_capacity"),
+        }
+
+        validated_data.pop("user", None)
+
+        profile = TransporterProfile.objects.create(
+            user=user,
+            **validated_data
+        )
+
+        Vehicle.objects.create(
+            transporter=user,
+            **vehicle_data
+        )
+
+        return profile
+    
+    def get_profile_image(self, obj):
+        return build_cloudinary_url(obj.profile_image)
 
     def get_driver_license_image(self, obj):
         return build_cloudinary_url(obj.driver_license_image)
@@ -139,20 +203,41 @@ class TransporterProfileSerializer(serializers.ModelSerializer):
 
 
 class BuyerProfileSerializer(serializers.ModelSerializer):
-    bussiness_license_image = serializers.ImageField(write_only=True)
+    profile_image_upload = serializers.ImageField(write_only=True, required=False)
+    bussiness_license_image_upload = serializers.ImageField(write_only=True, required=True)
+
+    profile_image = serializers.SerializerMethodField()
+    bussiness_license_image = serializers.SerializerMethodField()
 
     class Meta:
         model = BuyerProfile
-        fields = ["age", "bussiness_license_image"]
-        read_only_fields = ["is_validated", "validated_at", "rejection_reason", "rejected_at"]
+        fields = [
+            "age",
+            "profile_image",
+            "bussiness_license_image",
+            "profile_image_upload",
+            "bussiness_license_image_upload",
+        ]
+
+    def get_profile_image(self, obj):
+        return build_cloudinary_url(obj.profile_image)
+
+    def get_bussiness_license_image(self, obj):
+        return build_cloudinary_url(obj.bussiness_license_image)
 
     def create(self, validated_data):
-        user = self.context["request"].user
-        if user.role != User.ROLE_BUYER:
-            raise serializers.ValidationError("Only buyers allowed")
-        if hasattr(user, "buyer_profile"):
-            raise serializers.ValidationError("Profile already exists")
-        return BuyerProfile.objects.create(user=user, **validated_data)
+        profile_image = validated_data.pop("profile_image_upload", None)
+        business = validated_data.pop("bussiness_license_image_upload", None)
+
+        profile = BuyerProfile.objects.create(**validated_data)
+
+        if profile_image:
+            profile.profile_image = profile_image
+
+        profile.bussiness_license_image = business
+        profile.save()
+
+        return profile
 
 
 class MinistryProfileSerializer(serializers.ModelSerializer):
