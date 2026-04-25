@@ -55,14 +55,14 @@ export interface PaginatedResponse<T> {
 export type ProductSeason =
   | "spring"
   | "summer"
-  | "autumn"
+  | "fall"
   | "winter"
   | "";
 
 export const SEASON_LABELS: Record<ProductSeason, string> = {
   spring:   "Spring",
   summer:   "Summer",
-  autumn:   "Autumn",
+  fall:   "fall",
   winter:   "Winter",
   "": "all year",
 };
@@ -70,7 +70,7 @@ export const SEASON_LABELS: Record<ProductSeason, string> = {
 export const SEASON_ICONS: Record<ProductSeason, string> = {
   spring:   "local_florist",
   summer:   "wb_sunny",
-  autumn:   "eco",
+  fall:   "eco",
   winter:   "ac_unit",
   "": "calendar_month",
 };

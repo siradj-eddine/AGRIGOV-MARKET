@@ -44,7 +44,7 @@ export class ApiError extends Error {
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("access") : null;
   const isFormData = options.body instanceof FormData;
- 
+
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
@@ -54,10 +54,24 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     },
   });
 
-  const json = await res.json().catch((err) => (console.log(err)));
-  if (!res.ok) {
-    throw new ApiError(res.status, json?.message ?? json?.detail ?? "Something went wrong.");
+  let json: any = null;
+
+  try {
+    json = await res.json();
+  } catch {
+    json = null;
   }
+
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      json?.message ??
+      json?.detail ??
+      JSON.stringify(json) ??
+      "Something went wrong."
+    );
+  }
+
   return json as T;
 }
 
@@ -73,7 +87,14 @@ export function buildProductParams(
   const p = new URLSearchParams();
   if (search.trim())          p.set("search",     search.trim());
   if (filters.category)       p.set("category",   filters.category);
-  if (filters.season)         p.set("season",     filters.season);
+ console.log(filters.season);
+  if (filters.season){
+    if (filters.season === "all_year") {
+      p.set("season", "");
+    }else{
+      p.set("season",     filters.season);
+    }
+  }         
   if (filters.min_price)      p.set("min_price",  filters.min_price);
   if (filters.max_price)      p.set("max_price",  filters.max_price);
   if (filters.min_rating)     p.set("min_rating", filters.min_rating);
@@ -226,9 +247,8 @@ export const cartApi = {
 
   /** DELETE /api/cart/remove_item/ — { item_id } */
   removeItem: (body: RemoveItemRequest) =>
-    apiFetch<CartResponse>("/api/cart/remove_item/", {
+    apiFetch<CartResponse>(`/api/cart/remove-item/${body.item_id}/`, {
       method: "DELETE",
-      body:   JSON.stringify(body),
     }),
 
   /** POST /api/cart/clear_cart/ */

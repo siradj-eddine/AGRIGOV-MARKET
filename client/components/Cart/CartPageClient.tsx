@@ -97,6 +97,7 @@ const handleQuantityChange = useCallback(async (productId: number, qty: number) 
     
     if (updated && Array.isArray(updated.items)) {
       setCart(updated);  // ← This expects the full cart object
+        setCart(prev => prev ? { ...prev, items: prev.items.map((it) => it.product.id === productId ? { ...it, quantity: qty, total_price: parseFloat(it.price) * qty } : it) } : prev);
     } else {
       await loadCart();  // ← Falls back to reloading
     }
@@ -104,6 +105,7 @@ const handleQuantityChange = useCallback(async (productId: number, qty: number) 
     await loadCart();
   }
   console.log(`Updated product ${productId} to quantity ${qty}`);
+
 }, [cart, loadCart]);
 
   // ── Remove item ─────────────────────────────────────────────────────────────
@@ -202,7 +204,7 @@ const handleQuantityChange = useCallback(async (productId: number, qty: number) 
                   key={item.id}
                   item={item}
                   onQuantityChange={(newQty) => handleQuantityChange(item.product.id, newQty)}
-                  onRemove={handleRemove}
+                  onRemove={() => handleRemove(item.product.id) }
                 />
                 ))
               ) : (

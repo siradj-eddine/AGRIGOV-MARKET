@@ -160,7 +160,6 @@ export default function TransporterDashboardPage() {
     {
       label: "In Progress",
       value: stats.activeMissions,
-      icon: "in_progress",
       accent: "border-yellow-500",
       valueClass: "text-yellow-600",
     },

@@ -141,7 +141,10 @@ class FarmerProfileView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = FarmerProfileSerializer(data=request.data)
+        serializer = FarmerProfileSerializer(
+            data=request.data,
+            context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=201)

@@ -105,7 +105,7 @@ export const CATEGORY_SLUGS = [
 export const SEASON_OPTIONS = [
   { value: "spring",   label: "Spring"   },
   { value: "summer",   label: "Summer"   },
-  { value: "autumn",   label: "Autumn"   },
+  { value: "fall",   label: "Fall"   },
   { value: "winter",   label: "Winter"   },
   { value: "all_year", label: "All Year" },
 ];
@@ -122,7 +122,6 @@ export const FARMER_NAV: NavItem[] = [
   { href: "/farmer/dashboard",           label: "Overview",   icon: "space_dashboard" },
   { href: "/farmer/dashboard/products",  label: "Products",   icon: "storefront"      },
   { href: "/farmer/dashboard/orders",    label: "Orders",     icon: "receipt_long"    },
-  { href: "/farmer/dashboard/logistics", label: "Logistics",  icon: "local_shipping"  },
   { href: "/farmer/dashboard/analytics", label: "Analytics",  icon: "bar_chart"       },
   { href: "/farmer/dashboard/missions", label: "Missions",   icon: "delivery_truck_bolt"  },
 ];

@@ -6,14 +6,17 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ROLE_LINKS, UserRole } from "@/types/roles";
 import NotificationBell from "@/components/common/NotificationBell";  // ← ADD THIS
+import  userImage  from "../public/user.png";
+
 
 function getCookie(name: string) {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift();
+  if (parts.length === 2) return parts.pop()?.split(";").shift();  
   return null;
-}
+};
+
 
 export default function Navbar() {
   const [role, setRole] = useState<UserRole | null>(null);
@@ -82,7 +85,7 @@ useEffect(() => {
             <NotificationBell />  {/* ← REPLACED */}
 
             <div className="hidden sm:flex items-center gap-3 border-l border-neutral-200 dark:border-neutral-700 pl-4">
-              <Image src="/avatar.png" alt="Profile" width={32} height={32} className="h-8 w-8 rounded-full ring-2 ring-primary/10" />
+              <Image src={userImage} alt="Profile" width={32} height={32} className="h-8 w-8 rounded-full ring-2 ring-primary/10" />
               <div className="hidden lg:flex flex-col">
                 <span className="text-xs font-semibold text-neutral-900 dark:text-white uppercase">{role ?? "User"}</span>
                 <button onClick={handleLogout} className="text-[10px] text-red-500 font-bold hover:underline text-left">LOGOUT</button>
@@ -125,7 +128,7 @@ useEffect(() => {
           
           <div className="pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center gap-3 px-4 py-2">
-              <Image src="/avatar.png" alt="Profile" width={36} height={36} className="rounded-full" />
+              <Image src={userImage} alt="Profile" width={36} height={36} className="rounded-full" />
               <div>
                 <p className="text-sm font-bold text-neutral-900 dark:text-white uppercase">{role ?? "Guest"}</p>
                 <p className="text-xs text-neutral-500">Official Account</p>

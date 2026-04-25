@@ -97,6 +97,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
     profile_image = serializers.SerializerMethodField()
     farmer_card_image = serializers.SerializerMethodField()
     national_id_image = serializers.SerializerMethodField()
+    farm_name = serializers.CharField(write_only=True)
 
     class Meta:
         model = FarmerProfile
@@ -105,6 +106,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
             "wilaya",
             "baladiya",
             "farm_size",
+            "farm_name",
             "address",
 
             # read
@@ -128,11 +130,22 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
         return build_cloudinary_url(obj.national_id_image)
 
     def create(self, validated_data):
+        user = validated_data.pop("user")
+
         profile_image = validated_data.pop("profile_image_upload", None)
         farmer_card = validated_data.pop("farmer_card_image_upload")
         national_id = validated_data.pop("national_id_image_upload")
+        farm_name = validated_data.pop("farm_name")  # ✅ FIX
 
-        profile = FarmerProfile.objects.create(**validated_data)
+        farm_data = {
+            "name": farm_name,
+            "wilaya": validated_data.get("wilaya"),
+            "baladiya": validated_data.get("baladiya"),
+            "farm_size": validated_data.get("farm_size"),
+            "address": validated_data.get("address"),
+        }
+
+        profile = FarmerProfile.objects.create(user=user, **validated_data)
 
         if profile_image:
             profile.profile_image = profile_image
@@ -140,6 +153,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
         profile.farmer_card_image = farmer_card
         profile.national_id_image = national_id
         profile.save()
+        Farm.objects.create(farmer=user, **farm_data)
 
         return profile
 

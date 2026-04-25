@@ -48,13 +48,6 @@ class OrderSerializer(serializers.ModelSerializer):
             'allowed_statuses'
         ]
 
-    def get_allowed_statuses(self, obj):
-        request = self.context.get('request')
-        if request:
-            return obj.get_allowed_statuses_for_user(request.user)
-        return []
-
-
 # CHECKOUT SERIALIZER
 class CheckoutSerializer(serializers.Serializer):
     cart_id = serializers.IntegerField(required=False)
