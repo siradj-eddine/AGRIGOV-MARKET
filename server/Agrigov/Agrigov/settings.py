@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'notifications',
     'iot',
     'api',
+    'chats',
 ]
 
 REST_FRAMEWORK = {

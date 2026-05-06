@@ -17,6 +17,7 @@ interface Props {
   productId: string;
 }
 
+
 function DetailSkeleton() {
   return (
     <div className="animate-pulse max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -89,7 +90,11 @@ export default function ProductDetailPage({ productId }: Props) {
       </div>
     );
   }
-
+useEffect(() => {
+  if (product) {
+    (window as any).__currentProductId = product.id;
+  }
+}, [product]);
   return (
     <div className="bg-background-light font-display text-gray-800 min-h-screen flex flex-col">
 

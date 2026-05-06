@@ -4,12 +4,14 @@ export const ROLE_LINKS: Record<UserRole, { label: string; href: string }[]> = {
   FARMER: [
     {label: "Marketplace", href: "/marketplace" },
     {label: "Home", href: "/" },
+    { label: "Messages", href: "/chat" }, 
     { label: "Dashboard", href: "/farmer/dashboard/products" },
     { label: "Profile", href: "/farmer/profile" },
   ],
   BUYER: [
     { label: "Marketplace", href: "/marketplace" },
     {label: "Home", href: "/" },
+    { label: "Messages", href: "/chat" }, 
     { label: "Profile", href: "/buyer/profile" },
     { label: "Cart", href: "/Cart" },
     { label: "Checkout", href: "/Checkout" },

@@ -38,4 +38,5 @@ urlpatterns = [
     path("api/notifications/", include("notifications.urls")),
     path("api/iot/", include("iot.urls")),
     path("api/", include("api.urls")),
+    path('api/chat/', include('chats.urls')),
 ]

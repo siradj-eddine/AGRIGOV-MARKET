@@ -224,6 +224,75 @@ export const farmerMissionApi = {
 };
 
 
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+
+export interface ChatUser {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  conversation: number;
+  sender: ChatUser;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface ConversationListItem {
+  id: number;
+  farmer: ChatUser;
+  buyer: ChatUser;
+  product: number;
+  product_name: string;
+  last_message: ChatMessage | null;
+  unread_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationDetail {
+  id: number;
+  farmer: ChatUser;
+  buyer: ChatUser;
+  product: number;
+  product_name: string;
+  messages: ChatMessage[];
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+}
+
+export const chatApi = {
+  /** GET /api/chat/ - List all conversations */
+  list: () => apiFetch<{ count: number; results: ConversationListItem[] }>("/api/chat/"),
+
+  /** POST /api/chat/ - Start new conversation */
+ start: (farmId: number) =>
+    apiFetch<ConversationDetail>("/api/chat/", {
+      method: "POST",
+      body: JSON.stringify({ 
+        farm_id: farmId,
+      }),
+    }),
+
+  /** GET /api/chat/:id/ - Get conversation with messages */
+  detail: (id: number) => apiFetch<ConversationDetail>(`/api/chat/${id}/`),
+
+  /** POST /api/chat/:id/send/ - Send message */
+  sendMessage: (conversationId: number, content: string) =>
+    apiFetch<ChatMessage>(`/api/chat/${conversationId}/send/`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    }),
+
+  /** GET /api/chat/unread/ - Get unread count */
+  unreadCount: () => apiFetch<{ unread_count: number }>("/api/chat/unread/"),
+};
+
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
 export const cartApi = {
