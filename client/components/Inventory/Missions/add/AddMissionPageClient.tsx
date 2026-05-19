@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import FarmerSidebar from "@/components/Inventory/AddProduct/FarmSidebar";
 import { farmerMissionApi, ApiError } from "@/lib/api";
 import type { MissionCreatePayload } from "@/types/Missions";
 

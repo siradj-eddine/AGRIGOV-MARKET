@@ -24,7 +24,7 @@ export function displayRoleToApi(role: RoleFilter): ApiUserRole | null {
   return map[role] ?? null;
 }
 
-// ─── Dashboard API ────────────────────────────────────────────────────────────
+// ─── Dashboard API types ──────────────────────────────────────────────────────
 
 export interface ApiRecentUser {
   id: number;
@@ -43,16 +43,6 @@ export interface ApiDashboardOverview {
   total_revenue: number;
   total_reviews: number;
   avg_rating: number;
-}
-
-export interface ApiDashboardResponse {
-  role: string;
-  data: {
-    overview: ApiDashboardOverview;
-    recent_activity: {
-      recent_users: ApiRecentUser[];
-    };
-  };
 }
 
 export interface ApiRevenueTrendPoint {
@@ -79,7 +69,7 @@ export interface ApiDashboardCharts {
 export interface ApiTopProduct {
   id: number;
   ministry_product__name: string;
-  total_sold: number | null; // 🔥 FIX
+  total_sold: number | null;
 }
 
 export interface ApiDashboardInsights {
@@ -87,9 +77,10 @@ export interface ApiDashboardInsights {
   low_stock_products: number;
 }
 
-
+// ✅ Corrected ApiDashboardResponse – includes overview and charts
 export interface ApiDashboardResponse {
   overview: ApiDashboardOverview;
+  charts: ApiDashboardCharts;   // <-- added missing property
 }
 
 // ─── Users API ────────────────────────────────────────────────────────────────

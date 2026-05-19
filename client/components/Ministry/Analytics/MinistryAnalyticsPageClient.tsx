@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import type { ApiDashboardResponse } from "@/types/UserManagement";
-import type { RegionComparisonResponse } from "@/types/Regional";
-import { ministryApi, regionalApi, ApiError, productApi } from "@/lib/api";
+import { ministryApi, productApi } from "@/lib/api";
 import { apiRoleToDisplay } from "@/types/UserManagement";
 import { ApiProduct } from "@/types/Product";
 
